@@ -1,0 +1,5 @@
+# Copy to .dev.vars (gitignored) for `wrangler dev`. Never commit real values.
+ROMA_API_KEY=
+OFFHAND_TOKEN=
+# optional, only for POST /say
+ANTHROPIC_API_KEY=

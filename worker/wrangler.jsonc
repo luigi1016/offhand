@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "offhand",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    // Where items go when no list is named: a list name, or "tasks" for the inbox.
+    "DEFAULT_LIST": "tasks",
+    // For "what's due today". An IANA zone such as "America/Los_Angeles".
+    "TIME_ZONE": "UTC"
+  }
+  // Secrets are never in this file. Set them with `wrangler secret put <NAME>`:
+  //   ROMA_API_KEY       your task manager's API key
+  //   OFFHAND_TOKEN      the token your device sends; any long random string
+  //   ANTHROPIC_API_KEY  optional, only for POST /say
+}
