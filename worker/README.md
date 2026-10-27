@@ -1,3 +1,3 @@
 # offhand worker
 
-The Cloudflare Worker: the MCP server the Pebble app talks to, and the routes that handle phone calls. Coming in phase 0.
+The Cloudflare Worker: inputs (MCP tools and the text/audio endpoint), the four intents, task store adapters, and the cloud workers such as phone calls. Coming in phase 0.

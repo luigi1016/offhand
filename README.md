@@ -1,51 +1,64 @@
 # offhand
 
-Say it to the ring. It becomes a task. Something picks it up.
+Say it. It becomes a task. Something picks it up.
 
-offhand turns a to-do list into the control plane for your agents. You speak into a [Pebble Index 01](https://repebble.com/index) ring, the task lands in [Roma](https://roma.app), and workers watching your lists do the work: an AI that makes the phone call for you, or Claude Code running in the right repo on your Mac. Results come back to the same task, where you can read them and reply.
+offhand turns the to-do list you already use into the control plane for your agents. Any voice device becomes the input. Any task manager becomes the inbox. Workers watch your lists and do the work: make a phone call, run a coding agent in the right repo, or whatever you plug in next. Results land on the same task, where you read them and reply.
 
-> Voice is a great way to delegate and a terrible place to wait. A to-do list already has everything delegation needs: a record of what you asked, a status, a chat per item, and a notification when it is done. offhand just lets agents live in the list you already check.
+> Voice is a great way to delegate and a terrible place to wait. A to-do list already has everything delegation needs: a record of what you asked, a status, a chat per item, and a notification when it is done. offhand lets agents live in the list you already check.
 
 ## How it works
 
 ```
-ring  →  Pebble app  →  offhand worker  →  Roma lists
-                        (Cloudflare)          ├─ Calls      →  phone-call worker  →  summary + recording on the task
-                                              └─ my-repo    →  offhand for Mac    →  Claude Code  →  progress on the task
+inputs                      intents                 task store              workers
+(any voice device)          (four verbs)            (any to-do app)         (watch a list, do the work)
+
+ring, pendant, watch,  →    add                →    lists            →      phone call   →  summary + recording on the task
+shortcut, chat bot          complete                tasks                   coding agent →  progress on the task
+                            annotate                chat per task           your worker  →  ...
+                            read
 ```
 
-- **Ring to Roma.** Hold the ring and talk. The Pebble app transcribes on your phone and calls a small MCP server (a Cloudflare Worker you deploy with one click) that adds, completes, annotates or reads tasks in Roma.
-- **Phone calls.** A task in your Calls list ("call the dentist, move Thursday to next week") is picked up by the worker, which places the call through ElevenLabs in a voice you choose, then writes the summary and the recording back onto the task.
-- **Code.** A task in a list named after one of your repos starts Claude Code in that folder on your Mac. Progress shows up on the task. Reply in the task's chat to steer it.
+- **Inputs** deliver an utterance. Devices with their own agent call offhand's MCP tools directly. Devices without one post text or audio to a single endpoint and offhand works out the intent.
+- **Intents** are the only thing inputs know about: add a task, complete one, annotate one, read a list.
+- **The task store** is an interface: lists, tasks, status, a chat per task, and a way to watch a list for new tasks and replies. One file per task manager.
+- **Workers** watch a list and act. Which list a task is on decides who picks it up. A worker sets a task to in progress, writes its result into the task, posts only links or questions, and never marks anything complete. That is yours. Reply in the task's chat to steer it.
 
-Roma is the first task manager offhand speaks to. The task-manager side is an adapter, so others can follow.
+## Supported today
+
+| Side | First adapter | Next |
+|---|---|---|
+| Input | Pebble Index 01 ring (via MCP) | any device that can POST text or audio |
+| Task store | Roma | Todoist, Linear, Things, Notion |
+| Workers | phone calls (ElevenLabs + Twilio), Claude Code on a Mac | yours |
+
+The first adapters are the ones I use. The seams are there so the next ones are a file, not a fork.
 
 ## Status
 
-Early. Nothing to install yet. The roadmap, in build order:
+Early. Nothing to install yet. Build order:
 
 | Phase | What you get | Status |
 |---|---|---|
-| 0 | Ring to Roma: add, complete, annotate and read tasks by voice | in progress |
-| 1 | Phone calls from a task, summary and recording back on it | planned |
-| 2 | Mac app: tasks in repo-named lists run Claude Code | planned |
+| 0 | Voice to task: add, complete, annotate and read by voice | in progress |
+| 1 | Phone-call worker: a task becomes a call, summary and recording come back | planned |
+| 2 | Mac app: tasks on repo-named lists run Claude Code | planned |
 
 ## Install
 
-The goal is two pastes and one button, no terminal:
+The rule: one button, two pastes, no terminal.
 
-1. Create a Roma API key (Settings, then Connections).
+1. Create an API key in your task manager.
 2. Click **Deploy to Cloudflare**, paste the key.
-3. Open your worker's setup page and copy the two values into the Pebble app under Index settings, MCP servers.
+3. Open your deployment's setup page. It shows the URL and token to paste into your device's app.
 
-Details land here when phase 0 ships.
+Each adapter adds at most one card to the setup page. Details land here when phase 0 ships.
 
 ## Repository layout
 
 ```
-worker/   Cloudflare Worker: MCP server for the ring, phone-call routes
-mac/      offhand for Mac: menu bar app that runs Claude Code from Roma tasks
-docs/     design notes and the contract with Roma
+worker/   Cloudflare Worker: inputs, intents, task store adapters, cloud workers
+mac/      offhand for Mac: menu bar app that runs coding agents from your lists
+docs/     the contract: intents, the task store interface, how workers write back
 ```
 
 ## License
