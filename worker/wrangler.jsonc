@@ -8,8 +8,12 @@
   "vars": {
     // Where items go when no list is named: a list name, or "tasks" for the inbox.
     "DEFAULT_LIST": "tasks",
-    // For "what's due today". An IANA zone such as "America/Los_Angeles".
-    "TIME_ZONE": "UTC"
+    // For "what's due today" and "tonight". An IANA zone such as "America/Los_Angeles".
+    "TIME_ZONE": "UTC",
+    // POST /say only: the Claude model that picks the intent, and how hard it thinks.
+    "SAY_MODEL": "claude-opus-5-5",
+    "SAY_EFFORT": "low",
+    "SAY_MAX_TOKENS": "1024"
   }
   // Secrets are never in this file. Set them with `wrangler secret put <NAME>`:
   //   ROMA_API_KEY       your task manager's API key

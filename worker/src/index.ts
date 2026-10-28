@@ -15,6 +15,9 @@ export interface Env {
   // vars, in wrangler.jsonc
   DEFAULT_LIST: string;
   TIME_ZONE: string;
+  SAY_MODEL?: string; // POST /say: which Claude model picks the intent
+  SAY_EFFORT?: string; // POST /say: low | medium | high | xhigh | max
+  SAY_MAX_TOKENS?: string;
 }
 
 export default {
@@ -31,7 +34,14 @@ export default {
     const path = new URL(req.url).pathname;
     try {
       if (path === "/mcp") return await handleMcp(req, intents, env.OFFHAND_TOKEN);
-      if (path === "/say") return await handleSay(req, intents, env.ANTHROPIC_API_KEY);
+      if (path === "/say")
+        return await handleSay(req, intents, {
+          apiKey: env.ANTHROPIC_API_KEY,
+          model: env.SAY_MODEL || "claude-opus-5-5",
+          effort: env.SAY_EFFORT || "low",
+          maxTokens: Number(env.SAY_MAX_TOKENS) || 1024,
+          timeZone: env.TIME_ZONE || "UTC",
+        });
       if (path === "/setup") return await handleSetup(req, store, env.OFFHAND_TOKEN, env.DEFAULT_LIST || "tasks");
       if (path === "/") return new Response("offhand. Open /setup.", { headers: { "content-type": "text/plain" } });
       return new Response("not found", { status: 404 });

@@ -12,7 +12,7 @@ Every input ends in one of four intents. Each takes plain arguments and returns 
 
 | Intent | Arguments | What it does |
 |---|---|---|
-| `add_item` | `list?`, `items[]` (title, body?) | creates items on one list |
+| `add_item` | `list?`, `items[]` (title, body?, dueAt?) | creates items on one list |
 | `complete_item` | `item` (words) or `id` | marks one item done |
 | `annotate_item` | `item` or `id`, `text` | appends `text` to the item's body, verbatim |
 | `read_list` | `list?`, `when?` (`today`, `overdue`), `query?` | returns open items |
@@ -71,7 +71,7 @@ The first store. One API key, sent as the bearer on every call to `https://api.r
 | Store call | Roma tool | Arguments |
 |---|---|---|
 | lists | `list_lists` | `suppressOptions: true` |
-| createItems | `create_items` | `listId` (or omit for the Tasks list), `items: [{ title, body, externalId }]`, `enrich: true` |
+| createItems | `create_items` | `listId` (or omit for the Tasks list), `items: [{ title, body, dueAt, externalId }]`, `enrich: true` |
 | completeItem | `update_items` | `items: [{ itemId }]`, `taskStatus: "completed"` |
 | annotateItem | `update_items` | `items: [{ itemId, body }]`, `mode: "append"` |
 | readList | `list_items` | `listId`, `dueBefore`, `dueAfter`, `limit`; omitting `listId` reads every open task |

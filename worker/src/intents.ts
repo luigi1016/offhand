@@ -64,8 +64,9 @@ export function makeIntents(store: ItemStore, config: IntentConfig): Intents {
         note = `No list called ${list}. `;
         target = (await resolveList(undefined)) ?? { id: null, name: "Tasks" };
       }
-      const made = await store.createItems(target.id, items, { enrich: true });
-      const titles = made.map((m) => m.title).join(", ");
+      const clean = items.map((i) => (i.dueAt && !Number.isNaN(Date.parse(i.dueAt)) ? i : { ...i, dueAt: undefined }));
+      const made = await store.createItems(target.id, clean, { enrich: true });
+      const titles = made.map((m) => (m.dueAt ? `${m.title} (due ${whenSaid(m.dueAt, config.timeZone)})` : m.title)).join(", ");
       return { ok: true, say: `${note}Added ${titles} to ${target.name}.`, items: made };
     },
 
@@ -125,6 +126,11 @@ function dayWindow(when: "today" | "overdue", timeZone: string): { dueBefore?: s
   const startOfTomorrow = new Date(startOfToday.getTime() + 86_400_000);
   if (when === "overdue") return { dueBefore: startOfToday.toISOString() };
   return { dueAfter: startOfToday.toISOString(), dueBefore: startOfTomorrow.toISOString() };
+}
+
+// "Oct 28, 7:00 PM" in the person's zone, for the spoken result.
+function whenSaid(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 }
 
 function zoneOffset(at: Date, timeZone: string): string {

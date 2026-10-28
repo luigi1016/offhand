@@ -18,6 +18,7 @@ export interface Item {
 export interface NewItem {
   title: string;
   body?: string;
+  dueAt?: string; // ISO 8601 instant
   externalId?: string;
 }
 

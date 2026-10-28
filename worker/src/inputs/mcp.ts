@@ -33,7 +33,8 @@ export async function handleMcp(req: Request, intents: Intents, token: string): 
     case "ping":
       return rpcResult(id, {});
     case "tools/list":
-      return rpcResult(id, { tools: TOOLS });
+      // MCP spells it inputSchema; the Anthropic SDK (used by /say) spells it input_schema.
+      return rpcResult(id, { tools: TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: t.input_schema })) });
     case "tools/call": {
       const params = (msg.params ?? {}) as Json;
       const result = await runTool(intents, String(params.name), params.arguments);

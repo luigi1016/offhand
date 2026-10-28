@@ -20,7 +20,10 @@ Secrets are set once and never written to a file in this repo.
 | `OFFHAND_TOKEN` | secret | the token your device sends; any long random string |
 | `ANTHROPIC_API_KEY` | secret, optional | only for `POST /say` |
 | `DEFAULT_LIST` | var | where unlisted items go; a list name or `tasks` |
-| `TIME_ZONE` | var | for "due today"; an IANA zone |
+| `TIME_ZONE` | var | for "due today" and "tonight"; an IANA zone |
+| `SAY_MODEL` | var | `POST /say` only: the Claude model that picks the intent |
+| `SAY_EFFORT` | var | `POST /say` only: `low`, `medium`, `high`, `xhigh` or `max` |
+| `SAY_MAX_TOKENS` | var | `POST /say` only |
 
 ## Run it
 
