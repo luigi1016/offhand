@@ -4,10 +4,12 @@
 // Model and effort are config (wrangler.jsonc vars), not code: they will change.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { authorized } from "../auth";
 import type { IntentResult, Intents } from "../intents";
 import { TOOLS, runTool } from "../tools";
 
 export interface SayConfig {
+  token: string | null; // the offhand token, same as /mcp
   apiKey?: string;
   model: string;
   effort: string; // low | medium | high | xhigh | max
@@ -22,6 +24,7 @@ const SYSTEM =
   "If the utterance fits no tool, call read_list with the utterance as query.";
 
 export async function handleSay(req: Request, intents: Intents, config: SayConfig): Promise<Response> {
+  if (!authorized(req, config.token)) return new Response("unauthorized", { status: 401 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
   if (!config.apiKey) return Response.json({ ok: false, say: "Text input is not set up.", reason: "error" }, { status: 501 });
 

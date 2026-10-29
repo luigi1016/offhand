@@ -49,11 +49,16 @@ Early. Build order:
 
 The rule: one button, two pastes, no terminal.
 
-1. Create an API key in your task manager.
-2. Click **Deploy to Cloudflare**, paste the key and make up a token.
-3. Open your deployment's setup page. It shows the URL and header to paste into your device's app.
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/luigi1016/offhand/tree/main/worker)
 
-Each adapter adds at most one card to the setup page. The button lands here when phase 0 ships; until then, [worker/README.md](worker/README.md) has the manual steps.
+1. Click the button. It needs a free Cloudflare account. Leave every secret empty and deploy.
+2. Open your new Worker's URL. It shows your token once and takes you to the setup page.
+3. On the setup page, click **Connect Roma** and approve in your browser.
+4. Paste the MCP URL and the header from the setup page into your device's app.
+
+Hold the button and say "add milk to groceries". The setup page is `<your worker>/setup?t=<token>`; bookmark it.
+
+Prefer keys over sign-in, or deploying from a terminal? [worker/README.md](worker/README.md) has both.
 
 ## Repository layout
 

@@ -1,6 +1,7 @@
 // Roma as an item store: https://roma.app/developers
-// Talks MCP over Streamable HTTP with an API key as the bearer.
+// Talks MCP over Streamable HTTP. The bearer is an API key or an OAuth token (roma-auth.ts).
 
+import type { Bearer } from "./roma-auth";
 import type { FindOptions, Item, ItemStore, ListRef, NewItem, ReadFilter } from "./types";
 
 const ENDPOINT = "https://api.roma.app/mcp";
@@ -11,7 +12,7 @@ export class RomaStore implements ItemStore {
   private sessionId: string | null = null;
   private nextId = 1;
 
-  constructor(private readonly apiKey: string) {}
+  constructor(private readonly bearer: Bearer) {}
 
   async lists(): Promise<ListRef[]> {
     const r = await this.call("list_lists", { suppressOptions: true });
@@ -64,6 +65,11 @@ export class RomaStore implements ItemStore {
       this.sessionId = null;
       return this.call(name, args, false);
     }
+    if (res.status === 401 && retry) {
+      await this.bearer.token(true);
+      this.sessionId = null;
+      return this.call(name, args, false);
+    }
     const msg = await readRpc(res);
     if (msg.error) throw new Error(`roma ${name}: ${(msg.error as Json).message}`);
     const result = msg.result as Json;
@@ -90,7 +96,7 @@ export class RomaStore implements ItemStore {
 
   private async rpc(method: string, params?: Json, notification = false): Promise<Response> {
     const headers: Record<string, string> = {
-      authorization: `Bearer ${this.apiKey}`,
+      authorization: `Bearer ${await this.bearer.token()}`,
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
     };

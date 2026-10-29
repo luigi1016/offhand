@@ -43,7 +43,7 @@ Not in the contract today: delete, move, create list, undo, any confirmation ste
 Two kinds.
 
 - A device with its own agent calls `POST /mcp`. offhand exposes the four intents as MCP tools over Streamable HTTP, bearer auth. The device's agent picks the tool and fills the arguments; its descriptions are the prompt. The tool result's text is `say`.
-- A device without one calls `POST /say` with text (or audio, later). offhand picks the intent with a model and runs it. Same result shape back.
+- A device without one calls `POST /say` with text (or audio, later), same bearer. offhand picks the intent with a model and runs it. Same result shape back.
 
 Both are one-shot: one utterance in, one report out. An input that can speak keeps `say`; an input that can only show it shows it; an input that can converse uses the structured fields.
 
@@ -66,7 +66,7 @@ Phase 1 and 2 add, for workers: `setStatus(id, status)`, `writeBody(id, markdown
 
 ### Roma
 
-The first store. One API key, sent as the bearer on every call to `https://api.roma.app/mcp`.
+The first store. Every call to `https://api.roma.app/mcp` carries a bearer: an OAuth token from the sign-in on the setup page, refreshed by the Worker, or an API key when one is set.
 
 | Store call | Roma tool | Arguments |
 |---|---|---|
@@ -95,6 +95,6 @@ Phases 1 and 2. A worker watches one list. The list an item is on decides who pi
 | Piece | Runs on | In this repo |
 |---|---|---|
 | the device's app | your phone | nothing to install, you paste a URL and a token |
-| offhand | Cloudflare Workers, on request only | `worker/` |
-| the task manager | its own cloud | nothing, you hold a key |
+| offhand | Cloudflare Workers, on request only; one KV namespace for the token and the store's sign-in | `worker/` |
+| the task manager | its own cloud | nothing; you sign in once from the setup page, or hold a key |
 | offhand for Mac (phase 2) | your Mac | `mac/` |

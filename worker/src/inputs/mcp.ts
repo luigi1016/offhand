@@ -1,6 +1,7 @@
 // Input for devices with their own agent: the four intents as MCP tools.
 // Stateless Streamable HTTP, POST only, bearer auth. Spec: modelcontextprotocol.io
 
+import { authorized } from "../auth";
 import type { Intents } from "../intents";
 import { TOOLS, runTool } from "../tools";
 
@@ -8,7 +9,7 @@ const PROTOCOL = "2025-06-18";
 
 type Json = Record<string, unknown>;
 
-export async function handleMcp(req: Request, intents: Intents, token: string): Promise<Response> {
+export async function handleMcp(req: Request, intents: Intents, token: string | null): Promise<Response> {
   if (!authorized(req, token)) return new Response("unauthorized", { status: 401 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
@@ -37,29 +38,22 @@ export async function handleMcp(req: Request, intents: Intents, token: string): 
       return rpcResult(id, { tools: TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: t.input_schema })) });
     case "tools/call": {
       const params = (msg.params ?? {}) as Json;
-      const result = await runTool(intents, String(params.name), params.arguments);
+      let result;
+      try {
+        result = await runTool(intents, String(params.name), params.arguments);
+      } catch (e) {
+        const say = e instanceof Error && e.message.startsWith("Roma is not connected") ? e.message : "Something failed. Nothing changed.";
+        result = { ok: false as const, say, reason: "error" as const };
+      }
       return rpcResult(id, {
         content: [{ type: "text", text: result.say }],
         structuredContent: result,
-        isError: false,
+        isError: !result.ok,
       });
     }
     default:
       return rpcError(id, -32601, `method not found: ${msg.method}`);
   }
-}
-
-function authorized(req: Request, token: string): boolean {
-  const header = req.headers.get("authorization") ?? "";
-  const given = header.startsWith("Bearer ") ? header.slice(7) : "";
-  return given.length > 0 && timingSafeEqual(given, token);
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 function rpcResult(id: number | string | null, result: Json): Response {

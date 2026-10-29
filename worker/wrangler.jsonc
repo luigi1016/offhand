@@ -5,6 +5,9 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Holds the offhand token and Roma's sign-in. Deploy to Cloudflare creates it; by hand:
+  // `npx wrangler kv namespace create OFFHAND_KV` and paste the id here.
+  "kv_namespaces": [{ "binding": "OFFHAND_KV", "id": "offhand_kv_placeholder" }],
   "vars": {
     // Where items go when no list is named: a list name, or "tasks" for the inbox.
     "DEFAULT_LIST": "tasks",
@@ -15,8 +18,5 @@
     "SAY_EFFORT": "low",
     "SAY_MAX_TOKENS": "1024"
   }
-  // Secrets are never in this file. Set them with `wrangler secret put <NAME>`:
-  //   ROMA_API_KEY       your task manager's API key
-  //   OFFHAND_TOKEN      the token your device sends; any long random string
-  //   ANTHROPIC_API_KEY  optional, only for POST /say
+  // Secrets are never in this file. All optional; see .dev.vars.example.
 }
