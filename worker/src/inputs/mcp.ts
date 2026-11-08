@@ -3,6 +3,7 @@
 
 import { authorized } from "../auth";
 import type { Intents } from "../intents";
+import { NotConnected } from "../store/roma-auth";
 import { TOOLS, runTool } from "../tools";
 
 const PROTOCOL = "2025-06-18";
@@ -42,7 +43,7 @@ export async function handleMcp(req: Request, intents: Intents, token: string | 
       try {
         result = await runTool(intents, String(params.name), params.arguments);
       } catch (e) {
-        const say = e instanceof Error && e.message.startsWith("Roma is not connected") ? e.message : "Something failed. Nothing changed.";
+        const say = e instanceof NotConnected ? e.message : "Something failed. Nothing changed.";
         result = { ok: false as const, say, reason: "error" as const };
       }
       return rpcResult(id, {

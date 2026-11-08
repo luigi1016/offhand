@@ -61,11 +61,12 @@ export function makeIntents(store: ItemStore, config: IntentConfig): Intents {
       let target = await resolveList(list);
       let note = "";
       if (!target) {
-        note = `No list called ${list}. `;
+        note = `No list called ${list ?? config.defaultList}. `;
         target = (await resolveList(undefined)) ?? { id: null, name: "Tasks" };
       }
       const clean = items.map((i) => (i.dueAt && !Number.isNaN(Date.parse(i.dueAt)) ? i : { ...i, dueAt: undefined }));
       const made = await store.createItems(target.id, clean, { enrich: true });
+      if (made.length === 0) return { ok: false, say: "Nothing was added.", reason: "error" };
       const titles = made.map((m) => (m.dueAt ? `${m.title} (due ${whenSaid(m.dueAt, config.timeZone)})` : m.title)).join(", ");
       return { ok: true, say: `${note}Added ${titles} to ${target.name}.`, items: made };
     },
@@ -116,16 +117,20 @@ function describe(i: Item): string {
   return i.listName ? `${i.title} on ${i.listName}` : i.title;
 }
 
-// Midnight boundaries in the person's zone, as ISO instants.
+// Midnight boundaries in the person's zone, as ISO instants. Each midnight is found on its
+// own, so a day that gains or loses an hour at a DST change still starts and ends at 00:00.
 function dayWindow(when: "today" | "overdue", timeZone: string): { dueBefore?: string; dueAfter?: string } {
-  const now = new Date();
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
-  const today = fmt.format(now); // YYYY-MM-DD
-  const offset = zoneOffset(now, timeZone);
-  const startOfToday = new Date(`${today}T00:00:00${offset}`);
-  const startOfTomorrow = new Date(startOfToday.getTime() + 86_400_000);
+  const startOfToday = midnight(fmt.format(new Date()), timeZone);
   if (when === "overdue") return { dueBefore: startOfToday.toISOString() };
-  return { dueAfter: startOfToday.toISOString(), dueBefore: startOfTomorrow.toISOString() };
+  const tomorrow = fmt.format(new Date(startOfToday.getTime() + 36 * 3_600_000)); // well inside the next day
+  return { dueAfter: startOfToday.toISOString(), dueBefore: midnight(tomorrow, timeZone).toISOString() };
+}
+
+// 00:00 on a YYYY-MM-DD day in a zone. The offset is taken at that midnight, not at now.
+function midnight(day: string, timeZone: string): Date {
+  const guess = new Date(`${day}T00:00:00${zoneOffset(new Date(`${day}T12:00:00Z`), timeZone)}`);
+  return new Date(`${day}T00:00:00${zoneOffset(guess, timeZone)}`);
 }
 
 // "Oct 28, 7:00 PM" in the person's zone, for the spoken result.

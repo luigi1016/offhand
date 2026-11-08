@@ -108,8 +108,11 @@ export class RomaAuth implements Bearer {
         client_id: clientId,
         resource: ROMA_RESOURCE,
       });
-    } catch (e) {
-      // A 400 here means the grant is gone: sign in again.
+    } catch {
+      // Either the grant is gone, or a parallel request refreshed first and the refresh
+      // token we sent was already rotated. Re-read before forgetting the sign-in.
+      const now = await this.kv.get(K.tokens);
+      if (now && now !== raw) return (JSON.parse(now) as Tokens).access_token;
       await this.kv.delete(K.tokens);
       throw new NotConnected();
     }

@@ -21,7 +21,9 @@ export class RomaStore implements ItemStore {
   }
 
   async createItems(listId: string | null, items: NewItem[], opts?: { enrich?: boolean }): Promise<Item[]> {
-    const args: Json = { items, enrich: opts?.enrich ?? true };
+    // A dueAt from offhand is an instant with a time of day. Without hasDueTime Roma keeps only the day.
+    const rows = items.map((i) => (i.dueAt ? { ...i, hasDueTime: true } : i));
+    const args: Json = { items: rows, enrich: opts?.enrich ?? true };
     if (listId) args.listId = listId;
     const r = await this.call("create_items", args);
     const made = [...((r.items as Json[] | undefined) ?? []), ...((r.existing as Json[] | undefined) ?? [])];
@@ -34,7 +36,8 @@ export class RomaStore implements ItemStore {
   }
 
   async annotateItem(id: string, text: string): Promise<Item> {
-    const r = await this.call("update_items", { items: [{ itemId: id, body: text }], mode: "append" });
+    // Roma refuses a body change without a message for the person (messageRequired).
+    const r = await this.call("update_items", { items: [{ itemId: id, body: text, message: "Note added by voice." }], mode: "append" });
     return toItem(((r.items as Json[] | undefined) ?? [{ id }])[0]);
   }
 
@@ -58,15 +61,20 @@ export class RomaStore implements ItemStore {
   }
 
   // One MCP tools/call. Initializes a session on first use and once more if Roma forgets it.
+  // A 401 anywhere, including on initialize, asks the bearer for a fresh token and retries once.
   private async call(name: string, args: Json, retry = true): Promise<Json> {
-    if (!this.sessionId) await this.initialize();
-    const res = await this.rpc("tools/call", { name, arguments: args });
-    if (res.status === 404 && retry) {
+    let res: Response;
+    try {
+      if (!this.sessionId) await this.initialize();
+      res = await this.rpc("tools/call", { name, arguments: args });
+      if (res.status === 401) throw new Unauthorized();
+    } catch (e) {
+      if (!(retry && e instanceof Unauthorized)) throw e;
+      await this.bearer.token(true);
       this.sessionId = null;
       return this.call(name, args, false);
     }
-    if (res.status === 401 && retry) {
-      await this.bearer.token(true);
+    if (res.status === 404 && retry) {
       this.sessionId = null;
       return this.call(name, args, false);
     }
@@ -108,9 +116,16 @@ export class RomaStore implements ItemStore {
   }
 }
 
+class Unauthorized extends Error {
+  constructor() {
+    super("roma http 401");
+  }
+}
+
 // A Streamable HTTP response is JSON or an SSE stream with the JSON inside.
 async function readRpc(res: Response): Promise<Json> {
   const text = await res.text();
+  if (res.status === 401) throw new Unauthorized();
   if (!res.ok) throw new Error(`roma http ${res.status}: ${text.slice(0, 200)}`);
   if ((res.headers.get("content-type") ?? "").includes("text/event-stream")) {
     let last: Json | null = null;

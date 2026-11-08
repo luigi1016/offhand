@@ -13,7 +13,7 @@ interface Hit {
   body?: string;
 }
 
-function fakeRoma(opts: { refreshStatus?: number } = {}) {
+function fakeRoma(opts: { refreshStatus?: number; onRefresh?: () => Promise<void> } = {}) {
   const hits: Hit[] = [];
   let issued = 0;
   const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -26,7 +26,10 @@ function fakeRoma(opts: { refreshStatus?: number } = {}) {
     if (url === `${AS}/register`) return json({ client_id: "client-123" }, 201);
     if (url === `${AS}/token`) {
       const form = new URLSearchParams(String(init?.body));
-      if (form.get("grant_type") === "refresh_token" && opts.refreshStatus) return json({ error: "invalid_grant" }, opts.refreshStatus);
+      if (form.get("grant_type") === "refresh_token" && opts.refreshStatus) {
+        await opts.onRefresh?.();
+        return json({ error: "invalid_grant" }, opts.refreshStatus);
+      }
       issued++;
       return json({ access_token: `access-${issued}`, refresh_token: `refresh-${issued}`, expires_in: 3600 });
     }
@@ -124,6 +127,21 @@ describe("RomaAuth", () => {
     await auth.callback(ORIGIN, new URLSearchParams({ code: "c", state }));
     await expect(auth.token(true)).rejects.toBeInstanceOf(NotConnected);
     expect(await auth.connected()).toBe(false);
+  });
+
+  it("keeps the sign-in when a parallel request refreshed first and ours was refused", async () => {
+    // While our refresh is in flight another request stores the rotated tokens. A 400 on ours
+    // must not delete theirs.
+    const winner = { access_token: "access-other", refresh_token: "refresh-other", expires_at: Date.now() + 3_600_000 };
+    const { fetchMock } = fakeRoma({ refreshStatus: 400, onRefresh: () => kv.put("roma.tokens", JSON.stringify(winner)) });
+    vi.stubGlobal("fetch", fetchMock);
+    const auth = new RomaAuth(kv);
+    const state = new URL(await auth.startUrl(ORIGIN)).searchParams.get("state") as string;
+    await auth.callback(ORIGIN, new URLSearchParams({ code: "c", state }));
+
+    expect(await auth.token(true)).toBe("access-other");
+    expect(await auth.connected()).toBe(true);
+    expect(kv.data.get("roma.tokens")).toBe(JSON.stringify(winner));
   });
 
   it("disconnect drops the tokens but keeps the client registration", async () => {

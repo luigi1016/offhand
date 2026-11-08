@@ -102,8 +102,15 @@ export default {
         return Response.redirect(await romaAuth.startUrl(origin), 302);
       }
       if (path === "/oauth/callback") {
+        // A browser lands here, so failures are a page, not JSON.
         if (!romaAuth) return renderPlain("Roma is connected with an API key.");
-        await romaAuth.callback(origin, url.searchParams);
+        const denied = url.searchParams.get("error");
+        if (denied) return renderPlain(`Roma sign-in did not finish (${denied}). Go back to your setup page and try again.`, 400);
+        try {
+          await romaAuth.callback(origin, url.searchParams);
+        } catch (e) {
+          return renderPlain(`Roma sign-in failed: ${e instanceof Error ? e.message : String(e)}. Go back to your setup page and try again.`, 400);
+        }
         return Response.redirect(`${origin}/setup?t=${encodeURIComponent(token)}`, 303);
       }
 

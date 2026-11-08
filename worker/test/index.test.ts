@@ -99,11 +99,20 @@ describe("oauth routes", () => {
     expect(await res.text()).toContain("Open this page with your token");
   });
 
-  it("/oauth/callback with no pending state does not store anything", async () => {
+  it("/oauth/callback with no pending state stores nothing and shows a page, not JSON", async () => {
     const e = env({ OFFHAND_TOKEN: "chosen" });
     const res = await worker.fetch(get("/oauth/callback?code=x&state=y"), e);
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(400);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("setup page");
     expect((e.OFFHAND_KV as FakeKV).data.has("roma.tokens")).toBe(false);
+  });
+
+  it("/oauth/callback explains a sign-in the person cancelled on Roma", async () => {
+    const e = env({ OFFHAND_TOKEN: "chosen" });
+    const res = await worker.fetch(get("/oauth/callback?error=access_denied"), e);
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("access_denied");
   });
 });
 

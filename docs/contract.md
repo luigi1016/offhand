@@ -34,7 +34,7 @@ The result:
 - `complete_item` and `annotate_item` resolve `item` by searching open items. One clear match acts. No match or several matches changes nothing and returns the candidates.
 - Text is stored as said. The only cleanup is the store's own, where it has one (Roma's enrich pass derives a tidier title and a due date from the words). Nothing offhand runs rewrites what you said.
 - Every intent is reversible from the store's own app. Nothing is deleted.
-- Repeats are safe: an input passes a stable `externalId` with each add, and a retried request returns the item already made.
+- Repeats are made safe by a stable `externalId` per add, which returns the item already made instead of a second one. The store accepts it; the inputs do not send one yet.
 
 Not in the contract today: delete, move, create list, undo, any confirmation step. Delete is the only irreversible verb and needs a confirmation the first inputs cannot give. Move and undo come when day-to-day use asks for them.
 

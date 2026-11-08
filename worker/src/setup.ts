@@ -34,7 +34,7 @@ export async function renderSetup(state: SetupState, notice?: string): Promise<R
     try {
       const all = await store.lists();
       lists = all.map((l) => `<li>${esc(l.name)}${sameList(l.name, defaultList) ? " <b>(default)</b>" : ""}</li>`).join("");
-      if (defaultList.toLowerCase() === "tasks") lists += `<li>Tasks <b>(default: the inbox)</b></li>`;
+      if (defaultList.toLowerCase() === "tasks" && !all.some((l) => sameList(l.name, "tasks"))) lists += `<li>Tasks <b>(default: the inbox)</b></li>`;
     } catch (e) {
       lists = `<li><b>Could not reach Roma:</b> ${esc(String(e))}</li>`;
     }
@@ -84,7 +84,9 @@ export function renderNoToken(origin: string): Response {
     <p>Open this page with your token: <code>${esc(origin)}/setup?t=&lt;your token&gt;</code></p>
     <p>You saw the token once, right after deploying, at <code>${esc(origin)}/</code>. If you lost it, set a new one
     as the <code>OFFHAND_TOKEN</code> secret, or delete the <code>offhand.token</code> key from the KV namespace and
-    open <code>${esc(origin)}/</code> again.</p>`);
+    open <code>${esc(origin)}/</code> again.</p>
+    <p><b>Never saw a token?</b> Then something else opened <code>${esc(origin)}/</code> first, such as a link preview or a
+    scanner, and holds it. Treat it as taken: make a new one the same way, now.</p>`);
 }
 
 // Shown exactly once: the first visit to / after deploying, when the token is made.
@@ -110,7 +112,7 @@ function esc(s: string): string {
 }
 
 function html(body: string, status = 200): Response {
-  const page = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+  const page = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="referrer" content="no-referrer">
 <title>offhand setup</title>
 <style>
   body{font:16px/1.5 system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem;color:#222}

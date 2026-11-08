@@ -1,6 +1,6 @@
 // The four intents against a fake store: a tool call in, the store calls out, one sentence back.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { makeIntents } from "../src/intents";
 import { FakeStore } from "./fakes";
 
@@ -24,6 +24,20 @@ describe("add_item", () => {
     const r = await intents.add_item({ items: [{ title: "call mom" }] });
     expect(r.say).toBe("Added call mom to Tasks.");
     expect(store.last("createItems")?.args[0]).toBeNull();
+  });
+
+  it("names the default list, not undefined, when no list was said and the default is missing", async () => {
+    const { store } = setup();
+    const r = await makeIntents(store, { defaultList: "Inbox", timeZone: "UTC" }).add_item({ items: [{ title: "milk" }] });
+    expect(r.say).toBe("No list called Inbox. Added milk to Tasks.");
+  });
+
+  it("fails instead of saying 'Added' when the store made nothing", async () => {
+    const { store, intents } = setup();
+    store.createItems = async () => [];
+    const r = await intents.add_item({ items: [{ title: "milk" }] });
+    expect(r.ok).toBe(false);
+    expect(r.say).toBe("Nothing was added.");
   });
 
   it("falls back to the default list and says so when the list does not exist", async () => {
@@ -156,15 +170,33 @@ describe("read_list", () => {
     expect(store.last("readList")).toBeUndefined();
   });
 
-  it("turns today into a day window in the person's zone", async () => {
+  it("turns today into a day window in the person's zone, midnight to midnight", async () => {
     const { store, intents } = setup();
     await intents.read_list({ when: "today" });
     const filter = store.last("readList")?.args[1] as { dueAfter: string; dueBefore: string; limit: number };
     const start = new Date(filter.dueAfter);
     const end = new Date(filter.dueBefore);
-    expect(end.getTime() - start.getTime()).toBe(86_400_000);
-    expect(start.toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour12: false })).toMatch(/^(24|00):00:00$/);
+    const la = (d: Date) => d.toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour12: false });
+    expect(la(start)).toMatch(/^(24|00):00:00$/);
+    expect(la(end)).toMatch(/^(24|00):00:00$/);
+    const hours = (end.getTime() - start.getTime()) / 3_600_000;
+    expect([23, 24, 25]).toContain(hours); // a DST day is 23 or 25 hours long
     expect(filter.limit).toBe(10);
+  });
+
+  it("finds midnight on a DST change day with that midnight's offset", async () => {
+    // 2026-11-01 in Los Angeles: clocks fall back at 02:00 PDT. Midnight was PDT (-07:00).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-01T23:00:00.000Z")); // 3 PM PST, after the change
+    try {
+      const { store, intents } = setup();
+      await intents.read_list({ when: "today" });
+      const filter = store.last("readList")?.args[1] as { dueAfter: string; dueBefore: string };
+      expect(filter.dueAfter).toBe("2026-11-01T07:00:00.000Z"); // 00:00 PDT
+      expect(filter.dueBefore).toBe("2026-11-02T08:00:00.000Z"); // 00:00 PST the next day
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("turns overdue into everything due before today", async () => {
