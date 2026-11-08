@@ -1,3 +1,3 @@
 # The contract
 
-The four intents, the task store interface, and how workers write back. Written down here as it settles, before the first adapter is built.
+See [contract.md](contract.md): the four intents and their result shape, the item store interface, the Roma mapping, the worker rules, and where each piece runs.

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "offhand",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Holds the offhand token and Roma's sign-in. Deploy to Cloudflare creates it; by hand:
+  // `npx wrangler kv namespace create OFFHAND_KV` and paste the id here.
+  "kv_namespaces": [{ "binding": "OFFHAND_KV", "id": "offhand_kv_placeholder" }],
+  "vars": {
+    // Where items go when no list is named: a list name, or "tasks" for the inbox.
+    "DEFAULT_LIST": "tasks",
+    // For "what's due today" and "tonight". An IANA zone such as "America/Los_Angeles".
+    "TIME_ZONE": "UTC",
+    // POST /say only: the Claude model that picks the intent, and how hard it thinks.
+    "SAY_MODEL": "claude-opus-5-5",
+    "SAY_EFFORT": "low",
+    "SAY_MAX_TOKENS": "1024"
+  }
+  // Secrets are never in this file. All optional; see .dev.vars.example.
+}
