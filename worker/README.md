@@ -32,7 +32,7 @@ Secrets are set once and never written to a file in this repo. All three are opt
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars   # fill in locally, this file is gitignored
+cp .dev.vars.example .dev.vars   # uncomment and fill in locally, this file is gitignored
 npm run dev
 ```
 

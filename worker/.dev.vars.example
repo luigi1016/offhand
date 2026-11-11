@@ -1,9 +1,10 @@
-# Copy to .dev.vars (gitignored) for `wrangler dev`. Never commit real values.
-# Deploy to Cloudflare reads this file to know which secrets to ask for. All are optional.
+# Copy to .dev.vars (gitignored) for `wrangler dev` and uncomment what you need. Never commit real values.
+# Deploy to Cloudflare asks for every key this file sets and will not take an empty one,
+# so the optional secrets stay commented out: the button then asks for none.
 
-# The token your devices send. Leave empty and offhand makes one on your first visit to /.
-OFFHAND_TOKEN=
-# A Roma API key (Settings, Connections). Leave empty and sign in to Roma on the setup page instead.
-ROMA_API_KEY=
+# The token your devices send. Leave unset and offhand makes one on your first visit to /.
+# OFFHAND_TOKEN=
+# A Roma API key (Settings, Connections). Leave unset and sign in to Roma on the setup page instead.
+# ROMA_API_KEY=
 # Only for POST /say, the input for devices without their own agent.
-ANTHROPIC_API_KEY=
+# ANTHROPIC_API_KEY=

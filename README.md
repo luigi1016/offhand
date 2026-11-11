@@ -51,7 +51,7 @@ The rule: one button, two pastes, no terminal.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/luigi1016/offhand/tree/main/worker)
 
-1. Click the button. It needs a free Cloudflare account. Leave every secret empty and deploy.
+1. Click the button. It needs a free Cloudflare account. It asks for no secrets; pick your Git account and deploy.
 2. Open your new Worker's URL. It shows your token once and takes you to the setup page.
 3. On the setup page, click **Connect Roma** and approve in your browser.
 4. Paste the MCP URL and the header from the setup page into your device's app.
