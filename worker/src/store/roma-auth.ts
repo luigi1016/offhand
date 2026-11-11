@@ -41,6 +41,13 @@ const K = {
   pending: (state: string) => `roma.pending.${state}`,
 };
 
+// A claim is a sign-in started before the Worker had a token. Finishing one is what makes
+// the token, so it may only finish while there still is none; the state says which kind it is.
+const CLAIM = "claim.";
+export function isClaim(state: string): boolean {
+  return state.startsWith(CLAIM);
+}
+
 export class RomaAuth implements Bearer {
   constructor(private readonly kv: KV) {}
 
@@ -53,11 +60,11 @@ export class RomaAuth implements Bearer {
   }
 
   // The URL to send the person to. Registers this Worker as a client the first time.
-  async startUrl(origin: string): Promise<string> {
+  async startUrl(origin: string, claim = false): Promise<string> {
     const meta = await this.meta();
     const clientId = await this.clientId(meta, origin);
     const verifier = randomToken();
-    const state = randomToken();
+    const state = (claim ? CLAIM : "") + randomToken();
     await this.kv.put(K.pending(state), verifier, { expirationTtl: 600 });
     const url = new URL(meta.authorization_endpoint);
     url.searchParams.set("response_type", "code");

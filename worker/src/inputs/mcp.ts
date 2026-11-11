@@ -12,7 +12,8 @@ type Json = Record<string, unknown>;
 
 export async function handleMcp(req: Request, intents: Intents, token: string | null): Promise<Response> {
   if (!authorized(req, token)) return new Response("unauthorized", { status: 401 });
-  if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
+  // A client trying the older SSE transport opens with a GET.
+  if (req.method !== "POST") return new Response("offhand speaks Streamable HTTP: POST only. Choose Streamable, not SSE.", { status: 405, headers: { allow: "POST" } });
 
   let msg: Json;
   try {

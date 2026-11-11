@@ -1,5 +1,5 @@
-// The offhand token: the one secret a device sends. Made on first visit and kept in KV,
-// unless OFFHAND_TOKEN was set at deploy time, which wins.
+// The offhand token: the one secret a device sends. Made when Roma is first connected and
+// kept in KV, unless OFFHAND_TOKEN was set at deploy time, which wins.
 
 export interface KV {
   get(key: string): Promise<string | null>;
