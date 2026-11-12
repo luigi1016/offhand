@@ -8,6 +8,10 @@ offhand turns the to-do list you already use into the control plane for your age
 
 ## How it works
 
+One example loop:
+
+![You say "find 1BRs under 4k" to the ring. offhand adds it to a list in Roma, and an agent watching that list picks it up.](docs/img/example-loop.gif)
+
 ```
 inputs                      intents                 item store              workers
 (any voice device)          (four verbs)            (any to-do app)         (watch a list, do the work)
