@@ -41,7 +41,9 @@ export default {
 
     // The token: set at deploy time, or made when the first Roma sign-in finishes. It is never
     // handed to a visitor: a robot that opens / before the owner gets a page with a button.
-    let token = await loadToken(env, kv);
+    // The saved time zone is read alongside it: every request needs both, and neither waits on the other.
+    const [loaded, savedZone] = await Promise.all([loadToken(env, kv), env.TIME_ZONE || !kv ? null : kv.get(TZ_KEY)]);
+    let token = loaded;
     // The item store: an API key wins; otherwise Roma's sign-in.
     const romaAuth = env.ROMA_API_KEY ? null : new RomaAuth(kv as KV);
 
@@ -53,7 +55,8 @@ export default {
 
     const store: ItemStore = new RomaStore(romaAuth ?? keyBearer(env.ROMA_API_KEY as string));
     const defaultList = env.DEFAULT_LIST || "tasks";
-    const timeZone = env.TIME_ZONE || (kv && (await kv.get(TZ_KEY))) || "UTC";
+    const timeZone = env.TIME_ZONE || savedZone || "UTC";
+    const timeZoneFrom = env.TIME_ZONE ? "variable" : savedZone ? "browser" : "none";
     const intents = makeIntents(store, { defaultList, timeZone });
 
     const setupState = async (notice?: string) =>
@@ -66,6 +69,7 @@ export default {
           roma: { mode: romaAuth ? "oauth" : "key", connected: romaAuth ? await romaAuth.connected() : true },
           defaultList,
           timeZone,
+          timeZoneFrom,
         },
         notice,
       );
@@ -77,7 +81,14 @@ export default {
         if (token && !authorized(req, token)) return renderNoToken(origin);
         const tz = url.searchParams.get("tz");
         if (tz && validZone(tz)) await (kv as KV).put(TZ_KEY, tz);
-        return Response.redirect(await romaAuth.startUrl(origin, !token), 302);
+        // A browser lands here too, so a failure to reach Roma is a page, not JSON.
+        let to: string;
+        try {
+          to = await romaAuth.startUrl(origin, !token);
+        } catch (e) {
+          return renderPlain(`Could not start the Roma sign-in: ${e instanceof Error ? e.message : String(e)}. Try again in a minute.`, 502);
+        }
+        return Response.redirect(to, 302);
       }
       if (path === "/oauth/callback") {
         // A browser lands here, so failures are a page, not JSON.

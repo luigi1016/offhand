@@ -12,10 +12,11 @@ export interface SetupState {
   roma: { mode: "key" | "oauth"; connected: boolean };
   defaultList: string;
   timeZone: string;
+  timeZoneFrom: "variable" | "browser" | "none"; // TIME_ZONE, the zone saved at sign-in, or neither
 }
 
 export async function renderSetup(state: SetupState, notice?: string): Promise<Response> {
-  const { origin, token, store, roma, defaultList, timeZone } = state;
+  const { origin, token, store, roma, defaultList, timeZone, timeZoneFrom } = state;
   const t = `?t=${encodeURIComponent(token)}`;
 
   let romaSection: string;
@@ -48,6 +49,17 @@ export async function renderSetup(state: SetupState, notice?: string): Promise<R
     : `<form method="post" action="/setup${t}"><button name="action" value="rotate">New token</button>
        <span class="muted">Makes a new one and invalidates this one. Paste it into your device's app again.</span></form>`;
 
+  let zoneLine: string;
+  if (timeZoneFrom === "variable") {
+    zoneLine = `"Today", "tonight" and the times you say are in <b>${esc(timeZone)}</b>, set by the <code>TIME_ZONE</code> variable.`;
+  } else if (timeZoneFrom === "browser") {
+    zoneLine = `"Today", "tonight" and the times you say are in <b>${esc(timeZone)}</b>, taken from this browser when Roma was connected.
+      Set the <code>TIME_ZONE</code> variable to override it.`;
+  } else {
+    zoneLine = `<b>No time zone is saved</b>, so "today", "tonight" and the times you say are read as UTC.
+      ${roma.mode === "oauth" ? "Disconnect Roma and connect it again from this browser, or set" : "Set"} the <code>TIME_ZONE</code> variable.`;
+  }
+
   return html(`
     ${notice ? `<p class="notice">${esc(notice)}</p>` : ""}
     <h1>offhand</h1>
@@ -79,8 +91,7 @@ export async function renderSetup(state: SetupState, notice?: string): Promise<R
     <h2>Lists offhand can see</h2>
     <ul>${lists}</ul>
     <p class="muted">Items with no list named go to the default. Change it with the <code>DEFAULT_LIST</code> variable.</p>
-    <p class="muted">"Today" and "tonight" are in <b>${esc(timeZone)}</b>, taken from this browser when Roma was connected.
-    Set the <code>TIME_ZONE</code> variable to override it.</p>
+    <p class="muted">${zoneLine}</p>
 
     <h2>Token</h2>
     ${rotate}

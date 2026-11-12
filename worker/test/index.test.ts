@@ -171,6 +171,16 @@ describe("the setup page", () => {
 });
 
 describe("oauth routes", () => {
+  it("/oauth/start answers with a page, not JSON, when Roma cannot be reached", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 500 })));
+    const e = env();
+    const res = await worker.fetch(get("/oauth/start"), e);
+    expect(res.status).toBe(502);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("Could not start the Roma sign-in");
+    expect((e.OFFHAND_KV as FakeKV).data.has("offhand.token")).toBe(false);
+  });
+
   it("/oauth/start needs the token once there is one", async () => {
     const e = env({ OFFHAND_TOKEN: "chosen" });
     const res = await worker.fetch(get("/oauth/start?t=wrong"), e);
@@ -204,6 +214,7 @@ describe("the time zone", () => {
     expect((e.OFFHAND_KV as FakeKV).data.get("offhand.tz")).toBe("America/Los_Angeles");
     const page = await (await worker.fetch(new Request(done.headers.get("location") as string), e)).text();
     expect(page).toContain("America/Los_Angeles");
+    expect(page).toContain("taken from this browser");
   });
 
   it("ignores a zone that is not one, and TIME_ZONE wins when set", async () => {
@@ -214,6 +225,17 @@ describe("the time zone", () => {
     await start(e, "/oauth/start?t=chosen&tz=Asia%2FTokyo");
     const page = await (await worker.fetch(get("/setup?t=chosen"), e)).text();
     expect(page).toContain("Europe/Rome");
+    expect(page).toContain("set by the");
+    expect(page).not.toContain("taken from this browser");
+  });
+
+  it("says so on the setup page when no zone was ever saved, instead of claiming UTC came from the browser", async () => {
+    const page = await (await worker.fetch(get("/setup?t=chosen"), env({ OFFHAND_TOKEN: "chosen" }))).text();
+    expect(page).toContain("No time zone is saved");
+    expect(page).toContain("connect it again");
+    const keyed = await (await worker.fetch(get("/setup?t=chosen"), env({ OFFHAND_TOKEN: "chosen", ROMA_API_KEY: "roma_x" }))).text();
+    expect(keyed).toContain("No time zone is saved");
+    expect(keyed).not.toContain("connect it again");
   });
 });
 
