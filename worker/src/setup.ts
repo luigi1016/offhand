@@ -86,8 +86,8 @@ export async function renderSetup(state: SetupState, notice?: string): Promise<R
     ${rotate}
 
     <h2>Update</h2>
-    <p>To get the latest offhand, see
-    <a href="https://github.com/luigi1016/offhand/blob/main/INSTALL.md#update-it">Update it</a> in the install guide.</p>
+    <p>To get the latest offhand code onto this Worker, follow
+    <a href="https://github.com/luigi1016/offhand/blob/main/INSTALL.md#update-your-worker">Update your Worker</a> in the install guide.</p>
     <script>
       for (const b of document.querySelectorAll("[data-copy]")) b.onclick = () => {
         navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
