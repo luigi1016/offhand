@@ -16,9 +16,11 @@ You need:
 1. Click the button above. Sign in to Cloudflare if it asks.
 2. On the form, pick your GitHub account under **Git account**. The first time, Cloudflare asks to connect to GitHub: approve it.
 3. Leave everything else as it is.
-4. Click the deploy button at the bottom and wait for the build to finish. It takes about a minute.
+4. Click **Deploy** at the bottom and wait for the build to finish. It takes about a minute.
 
-**You should see:** a form that asks for no token, key or secret, then a build that ends in success.
+<img src="docs/img/install-1-form.webp" width="460" alt="Cloudflare's form: Git account, Project name, KV namespace, the build commands, and a Deploy button">
+
+**You should see:** the form above, which asks for no token, key or secret, then a build that ends in success.
 
 Cloudflare has now made three things in your accounts: a copy of this code in a new GitHub repository, a Worker that runs it, and a small storage space (a KV namespace) for the Worker.
 
