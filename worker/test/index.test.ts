@@ -1,28 +1,99 @@
-// The router: the token is made once and shown once, a deploy-time token wins, and the
-// setup page and oauth routes are gated.
+// The router: the token is made when Roma sign-in finishes and never handed to a visitor,
+// a deploy-time token wins, and the setup page and oauth routes are gated.
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { type Env } from "../src/index";
 import { FakeKV } from "./fakes";
 
 function env(over: Partial<Env> = {}): Env {
-  return { OFFHAND_KV: new FakeKV(), DEFAULT_LIST: "tasks", TIME_ZONE: "UTC", ...over };
+  return { OFFHAND_KV: new FakeKV(), ...over };
 }
 
 const get = (path: string) => new Request(`https://offhand.test${path}`);
 
-describe("the token", () => {
-  it("is made on the first visit to /, shown once, and kept in KV", async () => {
-    const e = env();
-    const first = await worker.fetch(get("/"), e);
-    expect(first.status).toBe(200);
-    const page = await first.text();
-    const stored = (e.OFFHAND_KV as FakeKV).data.get("offhand.token");
-    expect(stored).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(page).toContain(stored);
+// Just enough of Roma for a sign-in to start and finish.
+function stubRoma() {
+  const AS = "https://auth.roma.test";
+  const json = (o: unknown) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string | URL | Request) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.endsWith("/.well-known/oauth-protected-resource")) return json({ authorization_servers: [AS] });
+      if (url.endsWith("/.well-known/oauth-authorization-server"))
+        return json({ authorization_endpoint: `${AS}/authorize`, token_endpoint: `${AS}/token`, registration_endpoint: `${AS}/register` });
+      if (url === `${AS}/register`) return json({ client_id: "client-123" });
+      if (url === `${AS}/token`) return json({ access_token: "access-1", refresh_token: "refresh-1", expires_in: 3600 });
+      return new Response("not found", { status: 404 });
+    }),
+  );
+}
 
-    const second = await worker.fetch(get("/"), e);
-    expect(await second.text()).not.toContain(stored);
+// Starts a sign-in and returns the state Roma would send back.
+async function start(e: Env, path = "/oauth/start"): Promise<string> {
+  const res = await worker.fetch(get(path), e);
+  expect(res.status).toBe(302);
+  return new URL(res.headers.get("location") as string).searchParams.get("state") as string;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("the token", () => {
+  it("is not made or shown by a visit to /, however many times", async () => {
+    const e = env();
+    for (let i = 0; i < 2; i++) {
+      const res = await worker.fetch(get("/"), e);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("/oauth/start");
+    }
+    expect((e.OFFHAND_KV as FakeKV).data.size).toBe(0);
+  });
+
+  it("is made when the first Roma sign-in finishes, which lands on the setup page", async () => {
+    stubRoma();
+    const e = env();
+    const kv = e.OFFHAND_KV as FakeKV;
+    const state = await start(e);
+    expect(kv.data.has("offhand.token")).toBe(false);
+
+    const done = await worker.fetch(get(`/oauth/callback?code=c&state=${state}`), e);
+    expect(done.status).toBe(303);
+    const token = kv.data.get("offhand.token") as string;
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(done.headers.get("location")).toBe(`https://offhand.test/setup?t=${token}`);
+    expect(kv.data.has("roma.tokens")).toBe(true);
+
+    const home = await (await worker.fetch(get("/"), e)).text();
+    expect(home).not.toContain(token);
+    expect(home).toContain("Open this page with your token");
+  });
+
+  it("is not given to someone who started signing in before the owner and finishes after", async () => {
+    stubRoma();
+    const e = env();
+    const kv = e.OFFHAND_KV as FakeKV;
+    const stranger = await start(e);
+    const owner = await start(e);
+    await worker.fetch(get(`/oauth/callback?code=c&state=${owner}`), e);
+    const token = kv.data.get("offhand.token") as string;
+    const roma = kv.data.get("roma.tokens");
+
+    const late = await worker.fetch(get(`/oauth/callback?code=c&state=${stranger}`), e);
+    expect(late.status).toBe(409);
+    expect(late.headers.get("location")).toBeNull();
+    expect(await late.text()).not.toContain(token);
+    expect(kv.data.get("offhand.token")).toBe(token);
+    expect(kv.data.get("roma.tokens")).toBe(roma);
+  });
+
+  it("needs OFFHAND_TOKEN when Roma is an API key, since there is no sign-in to make one from", async () => {
+    const e = env({ ROMA_API_KEY: "roma_x" });
+    const res = await worker.fetch(get("/"), e);
+    expect(res.status).toBe(500);
+    expect(await res.text()).toContain("OFFHAND_TOKEN");
+    expect((e.OFFHAND_KV as FakeKV).data.size).toBe(0);
   });
 
   it("is the deploy-time secret when one is set, and nothing is written to KV", async () => {
@@ -43,9 +114,9 @@ describe("the token", () => {
 
   it("can be rotated from the setup page, but not when set at deploy time", async () => {
     const e = env();
-    await worker.fetch(get("/"), e);
     const kv = e.OFFHAND_KV as FakeKV;
-    const old = kv.data.get("offhand.token") as string;
+    const old = "old-token";
+    kv.data.set("offhand.token", old);
     const form = new URLSearchParams({ action: "rotate" });
     const res = await worker.fetch(
       new Request(`https://offhand.test/setup?t=${old}`, { method: "POST", body: form, headers: { "content-type": "application/x-www-form-urlencoded" } }),
@@ -82,6 +153,14 @@ describe("the setup page", () => {
     expect(page).toContain("/oauth/start?t=chosen");
   });
 
+  it("says how to set up the Pebble app, and which kind of MCP server to choose", async () => {
+    const e = env({ OFFHAND_TOKEN: "chosen" });
+    const page = await (await worker.fetch(get("/setup?t=chosen"), e)).text();
+    expect(page).toContain("Index agent");
+    expect(page).toContain("Notes");
+    expect(page).toContain("Streamable");
+  });
+
   it("says the store is connected with a key when ROMA_API_KEY is set, and never prints it", async () => {
     const e = env({ OFFHAND_TOKEN: "chosen", ROMA_API_KEY: "roma_secret" });
     const page = await (await worker.fetch(get("/setup?t=chosen"), e)).text();
@@ -92,7 +171,17 @@ describe("the setup page", () => {
 });
 
 describe("oauth routes", () => {
-  it("/oauth/start needs the token", async () => {
+  it("/oauth/start answers with a page, not JSON, when Roma cannot be reached", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 500 })));
+    const e = env();
+    const res = await worker.fetch(get("/oauth/start"), e);
+    expect(res.status).toBe(502);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("Could not start the Roma sign-in");
+    expect((e.OFFHAND_KV as FakeKV).data.has("offhand.token")).toBe(false);
+  });
+
+  it("/oauth/start needs the token once there is one", async () => {
     const e = env({ OFFHAND_TOKEN: "chosen" });
     const res = await worker.fetch(get("/oauth/start?t=wrong"), e);
     expect(res.status).toBe(200);
@@ -116,14 +205,48 @@ describe("oauth routes", () => {
   });
 });
 
+describe("the time zone", () => {
+  it("comes from the browser when Roma is connected, and the setup page says which", async () => {
+    stubRoma();
+    const e = env();
+    const state = await start(e, "/oauth/start?tz=America%2FLos_Angeles");
+    const done = await worker.fetch(get(`/oauth/callback?code=c&state=${state}`), e);
+    expect((e.OFFHAND_KV as FakeKV).data.get("offhand.tz")).toBe("America/Los_Angeles");
+    const page = await (await worker.fetch(new Request(done.headers.get("location") as string), e)).text();
+    expect(page).toContain("America/Los_Angeles");
+    expect(page).toContain("taken from this browser");
+  });
+
+  it("ignores a zone that is not one, and TIME_ZONE wins when set", async () => {
+    stubRoma();
+    const e = env({ OFFHAND_TOKEN: "chosen", TIME_ZONE: "Europe/Rome" });
+    await start(e, "/oauth/start?t=chosen&tz=Not%2FA_Zone");
+    expect((e.OFFHAND_KV as FakeKV).data.has("offhand.tz")).toBe(false);
+    await start(e, "/oauth/start?t=chosen&tz=Asia%2FTokyo");
+    const page = await (await worker.fetch(get("/setup?t=chosen"), e)).text();
+    expect(page).toContain("Europe/Rome");
+    expect(page).toContain("set by the");
+    expect(page).not.toContain("taken from this browser");
+  });
+
+  it("says so on the setup page when no zone was ever saved, instead of claiming UTC came from the browser", async () => {
+    const page = await (await worker.fetch(get("/setup?t=chosen"), env({ OFFHAND_TOKEN: "chosen" }))).text();
+    expect(page).toContain("No time zone is saved");
+    expect(page).toContain("connect it again");
+    const keyed = await (await worker.fetch(get("/setup?t=chosen"), env({ OFFHAND_TOKEN: "chosen", ROMA_API_KEY: "roma_x" }))).text();
+    expect(keyed).toContain("No time zone is saved");
+    expect(keyed).not.toContain("connect it again");
+  });
+});
+
 describe("without KV", () => {
   it("works when both secrets are set", async () => {
-    const e: Env = { OFFHAND_TOKEN: "chosen", ROMA_API_KEY: "roma_x", DEFAULT_LIST: "tasks", TIME_ZONE: "UTC" };
+    const e: Env = { OFFHAND_TOKEN: "chosen", ROMA_API_KEY: "roma_x" };
     expect((await worker.fetch(get("/"), e)).status).toBe(200);
   });
 
   it("explains what to do otherwise", async () => {
-    const e: Env = { OFFHAND_TOKEN: "chosen", DEFAULT_LIST: "tasks", TIME_ZONE: "UTC" };
+    const e: Env = { OFFHAND_TOKEN: "chosen" };
     const res = await worker.fetch(get("/"), e);
     expect(res.status).toBe(500);
     expect(await res.text()).toContain("OFFHAND_KV");

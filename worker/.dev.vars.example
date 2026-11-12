@@ -2,7 +2,8 @@
 # Deploy to Cloudflare asks for every key this file sets and will not take an empty one,
 # so the optional secrets stay commented out: the button then asks for none.
 
-# The token your devices send. Leave unset and offhand makes one on your first visit to /.
+# The token your devices send. Leave unset and offhand makes one when you connect Roma.
+# Needed when ROMA_API_KEY is set, since there is then no sign-in to make one from.
 # OFFHAND_TOKEN=
 # A Roma API key (Settings, Connections). Leave unset and sign in to Roma on the setup page instead.
 # ROMA_API_KEY=

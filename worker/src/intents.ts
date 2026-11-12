@@ -1,4 +1,4 @@
-// The four intents. They never ask; they report. See docs/contract.md.
+// The four intents. They never ask; they report.
 
 import type { Item, ItemStore, NewItem } from "./store/types";
 
@@ -17,7 +17,7 @@ export interface Intents {
 
 export interface IntentConfig {
   defaultList: string; // a list name, or "tasks" for the store's inbox
-  timeZone: string; // for "today"
+  timeZone: string; // for "today", and for the clock times a person says
 }
 
 export function makeIntents(store: ItemStore, config: IntentConfig): Intents {
@@ -64,7 +64,7 @@ export function makeIntents(store: ItemStore, config: IntentConfig): Intents {
         note = `No list called ${list ?? config.defaultList}. `;
         target = (await resolveList(undefined)) ?? { id: null, name: "Tasks" };
       }
-      const clean = items.map((i) => (i.dueAt && !Number.isNaN(Date.parse(i.dueAt)) ? i : { ...i, dueAt: undefined }));
+      const clean = items.map((i) => (i.dueAt ? { ...i, dueAt: dueInstant(i.dueAt, config.timeZone) } : i));
       const made = await store.createItems(target.id, clean, { enrich: true });
       if (made.length === 0) return { ok: false, say: "Nothing was added.", reason: "error" };
       const titles = made.map((m) => (m.dueAt ? `${m.title} (due ${whenSaid(m.dueAt, config.timeZone)})` : m.title)).join(", ");
@@ -127,10 +127,33 @@ function dayWindow(when: "today" | "overdue", timeZone: string): { dueBefore?: s
   return { dueAfter: startOfToday.toISOString(), dueBefore: midnight(tomorrow, timeZone).toISOString() };
 }
 
-// 00:00 on a YYYY-MM-DD day in a zone. The offset is taken at that midnight, not at now.
+// 00:00 on a YYYY-MM-DD day in a zone.
 function midnight(day: string, timeZone: string): Date {
-  const guess = new Date(`${day}T00:00:00${zoneOffset(new Date(`${day}T12:00:00Z`), timeZone)}`);
-  return new Date(`${day}T00:00:00${zoneOffset(guess, timeZone)}`);
+  return inZone(`${day}T00:00:00`, timeZone);
+}
+
+// The instant a clock time (YYYY-MM-DDTHH:MM:SS) is in a zone. The offset is taken at that
+// time, not at now, so a date across a DST change is right.
+function inZone(clock: string, timeZone: string): Date {
+  const guess = new Date(`${clock}${zoneOffset(new Date(`${clock}Z`), timeZone)}`);
+  return new Date(`${clock}${zoneOffset(guess, timeZone)}`);
+}
+
+// The instant a said time means, or undefined when it is not a time at all.
+// A device sends the clock time the person said, and rarely knows their zone: a ring sent
+// "9am" as 09:00 UTC, which Roma showed as 1am in Los Angeles. So a bare time, or one marked
+// UTC, is read as that clock time in the person's zone. A time with a real offset already
+// says which instant it means and is kept as given. A day with no time is 09:00 that day,
+// as the tool description has it for "tomorrow": passed on bare it would be midnight UTC,
+// which is the day before in the Americas.
+function dueInstant(said: unknown, timeZone: string): string | undefined {
+  if (typeof said !== "string") return undefined;
+  const s = said.trim();
+  if (Number.isNaN(Date.parse(s))) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return inZone(`${s}T09:00:00`, timeZone).toISOString();
+  const m = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(:\d{2})?(\.\d+)?(Z|[+-]00:?00)?$/i.exec(s);
+  if (!m) return s;
+  return inZone(`${m[1].toUpperCase()}${m[2] ?? ":00"}`, timeZone).toISOString();
 }
 
 // "Oct 28, 7:00 PM" in the person's zone, for the spoken result.

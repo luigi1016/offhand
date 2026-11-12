@@ -1,25 +1,28 @@
 // offhand on Cloudflare Workers. Stateless per request; the little state there is
-// (the token, Roma's sign-in) lives in one KV namespace.
+// (the token, Roma's sign-in, the time zone) lives in one KV namespace.
 
 import { authorized, loadToken, makeToken, type KV } from "./auth";
 import { handleMcp } from "./inputs/mcp";
 import { handleSay } from "./inputs/say";
 import { makeIntents } from "./intents";
-import { renderFirstVisit, renderNoToken, renderPlain, renderSetup } from "./setup";
+import { renderNoToken, renderPlain, renderSetup, renderWelcome } from "./setup";
 import { RomaStore } from "./store/roma";
-import { NotConnected, RomaAuth, keyBearer } from "./store/roma-auth";
+import { NotConnected, RomaAuth, isClaim, keyBearer } from "./store/roma-auth";
 import type { ItemStore } from "./store/types";
+
+// The browser's time zone, sent along when Roma is connected. TIME_ZONE, when set, wins.
+const TZ_KEY = "offhand.tz";
 
 export interface Env {
   // KV, in wrangler.jsonc. Holds the token and Roma's sign-in. Optional when both secrets below are set.
   OFFHAND_KV?: KV;
   // secrets, set with `wrangler secret put` or on the Deploy to Cloudflare screen
-  OFFHAND_TOKEN?: string; // optional: made on first visit when unset
+  OFFHAND_TOKEN?: string; // optional: made when Roma is first connected
   ROMA_API_KEY?: string; // optional: sign in on the setup page instead
   ANTHROPIC_API_KEY?: string; // only for POST /say
-  // vars, in wrangler.jsonc
-  DEFAULT_LIST: string;
-  TIME_ZONE: string;
+  // vars, all optional; wrangler.jsonc sets none so that Deploy to Cloudflare asks for none
+  DEFAULT_LIST?: string; // where unlisted items go; "tasks" when unset
+  TIME_ZONE?: string; // an IANA zone; the browser's, from when Roma was connected, when unset
   SAY_MODEL?: string; // POST /say: which Claude model picks the intent
   SAY_EFFORT?: string; // POST /say: low | medium | high | xhigh | max
   SAY_MAX_TOKENS?: string;
@@ -36,23 +39,25 @@ export default {
       return renderPlain("Bind the OFFHAND_KV namespace, or set both OFFHAND_TOKEN and ROMA_API_KEY.", 500);
     }
 
-    // The token: set at deploy time, or made on the first visit to / and shown once.
-    let token = await loadToken(env, kv);
-    if (path === "/") {
-      if (!token) {
-        token = await makeToken(kv);
-        if (!token) return renderPlain("No token and nowhere to keep one.", 500);
-        return renderFirstVisit(origin, token);
-      }
-      return renderNoToken(origin);
-    }
-    if (!token) return renderPlain(`Not set up yet. Open ${origin}/ first.`, 503);
-
-    // The item store: an API key wins; otherwise Roma's sign-in from the setup page.
+    // The token: set at deploy time, or made when the first Roma sign-in finishes. It is never
+    // handed to a visitor: a robot that opens / before the owner gets a page with a button.
+    // The saved time zone is read alongside it: every request needs both, and neither waits on the other.
+    const [loaded, savedZone] = await Promise.all([loadToken(env, kv), env.TIME_ZONE || !kv ? null : kv.get(TZ_KEY)]);
+    let token = loaded;
+    // The item store: an API key wins; otherwise Roma's sign-in.
     const romaAuth = env.ROMA_API_KEY ? null : new RomaAuth(kv as KV);
+
+    if (path === "/") {
+      if (token) return renderNoToken(origin);
+      if (!romaAuth) return renderPlain("ROMA_API_KEY is set, so there is no sign-in to make a token from. Set OFFHAND_TOKEN as well.", 500);
+      return renderWelcome();
+    }
+
     const store: ItemStore = new RomaStore(romaAuth ?? keyBearer(env.ROMA_API_KEY as string));
     const defaultList = env.DEFAULT_LIST || "tasks";
-    const intents = makeIntents(store, { defaultList, timeZone: env.TIME_ZONE || "UTC" });
+    const timeZone = env.TIME_ZONE || savedZone || "UTC";
+    const timeZoneFrom = env.TIME_ZONE ? "variable" : savedZone ? "browser" : "none";
+    const intents = makeIntents(store, { defaultList, timeZone });
 
     const setupState = async (notice?: string) =>
       renderSetup(
@@ -63,11 +68,49 @@ export default {
           store,
           roma: { mode: romaAuth ? "oauth" : "key", connected: romaAuth ? await romaAuth.connected() : true },
           defaultList,
+          timeZone,
+          timeZoneFrom,
         },
         notice,
       );
 
     try {
+      if (path === "/oauth/start") {
+        if (!romaAuth) return renderPlain("Roma is connected with an API key; nothing to sign in to.");
+        // Before there is a token anyone may start: finishing the sign-in is what makes one.
+        if (token && !authorized(req, token)) return renderNoToken(origin);
+        const tz = url.searchParams.get("tz");
+        if (tz && validZone(tz)) await (kv as KV).put(TZ_KEY, tz);
+        // A browser lands here too, so a failure to reach Roma is a page, not JSON.
+        let to: string;
+        try {
+          to = await romaAuth.startUrl(origin, !token);
+        } catch (e) {
+          return renderPlain(`Could not start the Roma sign-in: ${e instanceof Error ? e.message : String(e)}. Try again in a minute.`, 502);
+        }
+        return Response.redirect(to, 302);
+      }
+      if (path === "/oauth/callback") {
+        // A browser lands here, so failures are a page, not JSON.
+        if (!romaAuth) return renderPlain("Roma is connected with an API key.");
+        const again = token ? "Go back to your setup page and try again." : `Open ${origin}/ and try again.`;
+        const denied = url.searchParams.get("error");
+        if (denied) return renderPlain(`Roma sign-in did not finish (${denied}). ${again}`, 400);
+        // Someone who started before the owner must not finish after them and be sent to the setup page.
+        if (token && isClaim(url.searchParams.get("state") ?? "")) {
+          return renderPlain("This offhand is already set up. Open your setup page.", 409);
+        }
+        try {
+          await romaAuth.callback(origin, url.searchParams);
+        } catch (e) {
+          return renderPlain(`Roma sign-in failed: ${e instanceof Error ? e.message : String(e)}. ${again}`, 400);
+        }
+        token ??= await makeToken(kv);
+        return Response.redirect(`${origin}/setup?t=${encodeURIComponent(token as string)}`, 303);
+      }
+
+      if (!token) return renderPlain(`Not set up yet. Open ${origin}/ first.`, 503);
+
       if (path === "/mcp") return await handleMcp(req, intents, token);
       if (path === "/say")
         return await handleSay(req, intents, {
@@ -76,7 +119,7 @@ export default {
           model: env.SAY_MODEL || "claude-opus-5-5",
           effort: env.SAY_EFFORT || "low",
           maxTokens: Number(env.SAY_MAX_TOKENS) || 1024,
-          timeZone: env.TIME_ZONE || "UTC",
+          timeZone,
         });
 
       if (path === "/setup") {
@@ -96,24 +139,6 @@ export default {
         return setupState();
       }
 
-      if (path === "/oauth/start") {
-        if (!authorized(req, token)) return renderNoToken(origin);
-        if (!romaAuth) return renderPlain("Roma is connected with an API key; nothing to sign in to.");
-        return Response.redirect(await romaAuth.startUrl(origin), 302);
-      }
-      if (path === "/oauth/callback") {
-        // A browser lands here, so failures are a page, not JSON.
-        if (!romaAuth) return renderPlain("Roma is connected with an API key.");
-        const denied = url.searchParams.get("error");
-        if (denied) return renderPlain(`Roma sign-in did not finish (${denied}). Go back to your setup page and try again.`, 400);
-        try {
-          await romaAuth.callback(origin, url.searchParams);
-        } catch (e) {
-          return renderPlain(`Roma sign-in failed: ${e instanceof Error ? e.message : String(e)}. Go back to your setup page and try again.`, 400);
-        }
-        return Response.redirect(`${origin}/setup?t=${encodeURIComponent(token)}`, 303);
-      }
-
       return new Response("not found", { status: 404 });
     } catch (e) {
       if (e instanceof NotConnected) {
@@ -123,3 +148,12 @@ export default {
     }
   },
 };
+
+function validZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
