@@ -11,7 +11,7 @@ You need:
 
 ## Step 1. Deploy
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/luigi1016/offhand/tree/install-hardening/worker)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/luigi1016/offhand/tree/main/worker)
 
 1. Click the button above. Sign in to Cloudflare if Cloudflare asks.
 2. On the form, pick your GitHub account under **Git account**. The first time, Cloudflare asks to connect to GitHub: approve the connection.
