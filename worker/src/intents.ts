@@ -1,4 +1,4 @@
-// The four intents. They never ask; they report. See docs/contract.md.
+// The four intents. They never ask; they report.
 
 import type { Item, ItemStore, NewItem } from "./store/types";
 

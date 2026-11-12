@@ -27,8 +27,6 @@ shortcut, chat bot          complete_item           items                   codi
 - **The item store** is an interface: lists, items, status, a chat per item, and a way to watch a list for new items and replies. One file per task manager.
 - **Workers** watch a list and act. Which list an item is on decides who picks it up. A worker sets an item to in progress, writes its result into the item, posts only links or questions, and never marks anything complete. That is yours. Reply in the item's chat to steer it.
 
-The full contract is in [docs/contract.md](docs/contract.md).
-
 ## Status
 
 Early. Build order:
@@ -52,7 +50,7 @@ Already installed? [Update your Worker to the latest offhand code](INSTALL.md#up
 ```
 worker/   Cloudflare Worker: inputs, intents, item store adapters, cloud workers
 mac/      offhand for Mac: menu bar app that runs coding agents from your lists
-docs/     the contract: intents, the item store interface, how workers write back
+docs/     pictures for the README and the install guide
 ```
 
 ## License
