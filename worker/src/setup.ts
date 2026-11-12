@@ -86,9 +86,8 @@ export async function renderSetup(state: SetupState, notice?: string): Promise<R
     ${rotate}
 
     <h2>Update</h2>
-    <p>offhand does not update by itself. To get the latest version, follow
-    <a href="https://github.com/luigi1016/offhand/blob/main/INSTALL.md#update-it">Update it</a> in the install guide.
-    Your token, Roma and your device stay as they are.</p>
+    <p>To get the latest offhand, see
+    <a href="https://github.com/luigi1016/offhand/blob/main/INSTALL.md#update-it">Update it</a> in the install guide.</p>
     <script>
       for (const b of document.querySelectorAll("[data-copy]")) b.onclick = () => {
         navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);

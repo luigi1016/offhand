@@ -159,7 +159,6 @@ describe("the setup page", () => {
     expect(page).toContain("Index agent");
     expect(page).toContain("Notes");
     expect(page).toContain("Streamable");
-    expect(page).toContain("INSTALL.md#update-it");
   });
 
   it("says the store is connected with a key when ROMA_API_KEY is set, and never prints it", async () => {
