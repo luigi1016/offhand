@@ -1,7 +1,5 @@
 # Install offhand
 
-Five steps, about five minutes, no terminal. At the end you say something to your device and it lands on a list in Roma.
-
 ## Before you start
 
 You need:
