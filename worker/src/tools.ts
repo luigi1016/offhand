@@ -21,7 +21,7 @@ export const TOOLS: ToolDef[] = [
     description:
       "Add one or more items to a list. A dictated list becomes one entry per item: 'milk, eggs and bread' is three. " +
       "Use the person's words as the title. Name the list only if the person named one; otherwise omit it and the default list is used. " +
-      "'Remind me to X tonight' and 'I need to X by Friday' are items with a due date: resolve the time to an instant from the current date and time. " +
+      "'Remind me to X tonight' and 'I need to X by Friday' are items with a due date: work out the day and the clock time from the current date and time. " +
       "Returns what was added and where.",
     input_schema: {
       type: "object",
@@ -37,7 +37,9 @@ export const TOOLS: ToolDef[] = [
               body: { type: "string", description: "Anything extra the person said about it." },
               dueAt: {
                 type: "string",
-                description: "When it is due, as an ISO 8601 instant with offset, only if the person said when. 'Tonight' is 19:00 today, 'tomorrow' is 09:00.",
+                description:
+                  "When it is due, only if the person said when: the clock time they said, as YYYY-MM-DDTHH:MM with no offset and no Z. " +
+                  "Do not convert to UTC; offhand applies the person's time zone. 'Tonight' is 19:00 today, 'tomorrow' is 09:00.",
               },
             },
             required: ["title"],

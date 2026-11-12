@@ -17,6 +17,8 @@ Every input ends in one of four intents. Each takes plain arguments and returns 
 | `annotate_item` | `item` or `id`, `text` | appends `text` to the item's body, verbatim |
 | `read_list` | `list?`, `when?` (`today`, `overdue`), `query?` | returns open items |
 
+`dueAt` is the clock time the person said, `YYYY-MM-DDTHH:MM`, with no offset: an input rarely knows the person's time zone, and offhand does. A time marked UTC is read the same way. A time with a real offset is kept as the instant it names.
+
 The result:
 
 ```

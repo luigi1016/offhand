@@ -48,12 +48,30 @@ describe("add_item", () => {
     expect(store.last("createItems")?.args[0]).toBeNull();
   });
 
-  it("passes a due date through and says it in the person's zone", async () => {
+  it("reads a said time as the clock time where the person is, bare or marked UTC", async () => {
+    // The ring sent "9am" as 09:00 UTC and Roma showed 1am in Los Angeles.
+    for (const said of ["2026-11-12T09:00", "2026-11-12T09:00:00", "2026-11-12T09:00:00Z", "2026-11-12T09:00:00.000+00:00"]) {
+      const { store, intents } = setup();
+      const r = await intents.add_item({ items: [{ title: "call mom", dueAt: said }] });
+      expect(r.say).toBe("Added call mom (due Nov 12, 9:00 AM) to Tasks.");
+      const sent = store.last("createItems")?.args[1] as { dueAt?: string }[];
+      expect(sent[0].dueAt).toBe("2026-11-12T17:00:00.000Z");
+    }
+  });
+
+  it("uses the offset of that day, not of today, across a DST change", async () => {
     const { store, intents } = setup();
-    const r = await intents.add_item({ items: [{ title: "buy milk", dueAt: "2026-10-29T02:00:00.000Z" }] });
+    await intents.add_item({ items: [{ title: "call mom", dueAt: "2026-07-01T09:00" }] });
+    const sent = store.last("createItems")?.args[1] as { dueAt?: string }[];
+    expect(sent[0].dueAt).toBe("2026-07-01T16:00:00.000Z");
+  });
+
+  it("keeps a time that carries a real offset as the instant it names", async () => {
+    const { store, intents } = setup();
+    const r = await intents.add_item({ items: [{ title: "buy milk", dueAt: "2026-10-28T22:00:00-04:00" }] });
     expect(r.say).toBe("Added buy milk (due Oct 28, 7:00 PM) to Tasks.");
     const sent = store.last("createItems")?.args[1] as { dueAt?: string }[];
-    expect(sent[0].dueAt).toBe("2026-10-29T02:00:00.000Z");
+    expect(sent[0].dueAt).toBe("2026-10-28T22:00:00-04:00");
   });
 
   it("drops a due date it cannot parse instead of failing", async () => {
