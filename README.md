@@ -57,8 +57,6 @@ No terminal, about five minutes. You need a free Cloudflare account, a GitHub ac
 
 Already installed? [Update your Worker to the latest offhand code](INSTALL.md#update-your-worker).
 
-Prefer keys over sign-in, or deploying from a terminal? [worker/README.md](worker/README.md) has both.
-
 ## Repository layout
 
 ```
