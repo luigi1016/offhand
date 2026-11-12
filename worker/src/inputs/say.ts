@@ -1,5 +1,5 @@
 // Input for devices without an agent: POST text, get a report back.
-// Claude picks the intent from the same four tools the MCP input exposes.
+// Claude picks the intent from the same tools the MCP input exposes.
 // Needs ANTHROPIC_API_KEY. Audio is not accepted yet; send the transcript.
 // Model and effort are config (wrangler.jsonc vars), not code: they will change.
 

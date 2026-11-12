@@ -1,4 +1,4 @@
-// Input for devices with their own agent: the four intents as MCP tools.
+// Input for devices with their own agent: the intents as MCP tools.
 // Stateless Streamable HTTP, POST only, bearer auth. Spec: modelcontextprotocol.io
 
 import { authorized } from "../auth";

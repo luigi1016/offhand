@@ -9,7 +9,7 @@ The Cloudflare Worker. Stateless: every request carries everything it needs.
 | `GET /` | you, once after deploying | a Connect Roma button. Shows nothing secret, so it does not matter who opens it first |
 | `GET /setup?t=<token>` | you | connect Roma, copy the URL and header to paste, see your lists, rotate the token |
 | `GET /oauth/start`, `/oauth/callback` | `/` and the setup page | Roma sign-in (OAuth 2.1, PKCE). The first one to finish makes your token and lands on the setup page |
-| `POST /mcp` | a device's own agent | the four intents as MCP tools over Streamable HTTP (not SSE), bearer auth |
+| `POST /mcp` | a device's own agent | add and read as MCP tools over Streamable HTTP (not SSE), bearer auth. Complete and annotate are switched off for now |
 | `POST /say` | a device without an agent | text in, Claude picks the intent, report out; same bearer |
 
 ## Secrets and variables

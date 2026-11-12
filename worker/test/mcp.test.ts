@@ -33,11 +33,11 @@ describe("POST /mcp", () => {
     expect((await handleMcp(rpc({ method: "ping" }), intents, null)).status).toBe(401);
   });
 
-  it("lists the four tools with inputSchema, as MCP spells it", async () => {
+  it("lists the tools with inputSchema, as MCP spells it; complete and annotate are off for now", async () => {
     const { intents } = setup();
     const res = await handleMcp(rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" }), intents, TOKEN);
     const body = (await res.json()) as { result: { tools: { name: string; inputSchema?: unknown; input_schema?: unknown }[] } };
-    expect(body.result.tools.map((t) => t.name)).toEqual(["add_item", "complete_item", "annotate_item", "read_list"]);
+    expect(body.result.tools.map((t) => t.name)).toEqual(["add_item", "read_list"]);
     for (const t of body.result.tools) {
       expect(t.inputSchema).toBeDefined();
       expect(t.input_schema).toBeUndefined();
@@ -56,6 +56,19 @@ describe("POST /mcp", () => {
     expect(body.result.structuredContent.ok).toBe(true);
     expect(body.result.isError).toBe(false);
     expect(store.last("createItems")?.args[0]).toBe("L1");
+  });
+
+  it("refuses a tool that is switched off, and changes nothing", async () => {
+    const { store, intents } = setup();
+    const res = await handleMcp(
+      rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "complete_item", arguments: { item: "milk" } } }),
+      intents,
+      TOKEN,
+    );
+    const body = (await res.json()) as { result: { content: { text: string }[]; isError: boolean } };
+    expect(body.result.isError).toBe(true);
+    expect(body.result.content[0].text).toBe("No tool called complete_item.");
+    expect(store.last("completeItem")).toBeUndefined();
   });
 
   it("turns a store failure into a tool error that still says nothing changed", async () => {

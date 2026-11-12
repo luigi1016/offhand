@@ -1,5 +1,9 @@
-// The four intents as tools. The descriptions are the prompt a device's agent reads.
+// The intents as tools. The descriptions are the prompt a device's agent reads.
 // Shared by the MCP input and the /say input so both see the same contract.
+//
+// complete_item and annotate_item are switched off for now (OFF, below). Both have to find
+// the item the person meant, and a word match is not enough: "done with printing documents"
+// missed "Print documents" and completed another item. The intents and their tests stay.
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { IntentResult, Intents } from "./intents";
@@ -15,12 +19,15 @@ const itemArg = {
   id: { type: "string", description: "The item's id, when known. Skips the match." },
 };
 
-export const TOOLS: ToolDef[] = [
+const OFF: (keyof Intents)[] = ["complete_item", "annotate_item"];
+
+const ALL: ToolDef[] = [
   {
     name: "add_item",
     description:
       "Add new items to a list: things the person wants to do, buy or remember. " +
-      "Not for something already finished: 'I'm done with X', 'I finished X' and 'X is done' are complete_item, never a new item. " +
+      "Not for something already finished: 'I'm done with X', 'I finished X' and 'X is done' are never a new item. " +
+      "Marking an item done is not available yet: say so instead. " +
       "A dictated list becomes one entry per item: 'milk, eggs and bread' is three. " +
       "The title is the thing itself in the person's words ('print documents'), not their whole sentence. " +
       "Name the list only if the person named one; otherwise omit it and the default list is used. " +
@@ -98,7 +105,10 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
+export const TOOLS: ToolDef[] = ALL.filter((t) => !OFF.includes(t.name));
+
 export async function runTool(intents: Intents, name: string, args: unknown): Promise<IntentResult> {
+  if (!TOOLS.some((t) => t.name === name)) return { ok: false, say: `No tool called ${name}.`, reason: "error" };
   const a = (args ?? {}) as never;
   switch (name) {
     case "add_item":

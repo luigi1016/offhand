@@ -45,7 +45,7 @@ Early. Build order:
 
 | Phase | What you get | Status |
 |---|---|---|
-| 0 | Voice to list: add, complete, annotate and read by voice | in progress |
+| 0 | Voice to list: add and read work by voice. Complete and annotate are switched off for now | in progress |
 | 1 | Phone-call worker: an item becomes a call, summary and recording come back | planned |
 | 2 | Mac app: items on repo-named lists run Claude Code | planned |
 
