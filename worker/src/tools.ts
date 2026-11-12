@@ -19,8 +19,11 @@ export const TOOLS: ToolDef[] = [
   {
     name: "add_item",
     description:
-      "Add one or more items to a list. A dictated list becomes one entry per item: 'milk, eggs and bread' is three. " +
-      "Use the person's words as the title. Name the list only if the person named one; otherwise omit it and the default list is used. " +
+      "Add new items to a list: things the person wants to do, buy or remember. " +
+      "Not for something already finished: 'I'm done with X', 'I finished X' and 'X is done' are complete_item, never a new item. " +
+      "A dictated list becomes one entry per item: 'milk, eggs and bread' is three. " +
+      "The title is the thing itself in the person's words ('print documents'), not their whole sentence. " +
+      "Name the list only if the person named one; otherwise omit it and the default list is used. " +
       "'Remind me to X tonight' and 'I need to X by Friday' are items with a due date: work out the day and the clock time from the current date and time. " +
       "Returns what was added and where.",
     input_schema: {
@@ -33,7 +36,7 @@ export const TOOLS: ToolDef[] = [
           items: {
             type: "object",
             properties: {
-              title: { type: "string", description: "The item, in the person's words." },
+              title: { type: "string", description: "The thing itself, in the person's words: 'call mom', not 'remind me to call mom'." },
               body: { type: "string", description: "Anything extra the person said about it." },
               dueAt: {
                 type: "string",
@@ -54,9 +57,17 @@ export const TOOLS: ToolDef[] = [
   {
     name: "complete_item",
     description:
-      "Mark one open item done: 'done with the dentist', 'I called mom'. " +
+      "The person says something is finished: 'I'm done with printing documents', 'done with the dentist', 'I called mom'. " +
+      "Marks that open item completed. Never add an item for this. Pass what they finished as item. " +
       "If several items match, nothing changes and the result names them.",
-    input_schema: { type: "object", properties: itemArg, additionalProperties: false },
+    input_schema: {
+      type: "object",
+      properties: {
+        ...itemArg,
+        item: { type: "string", description: "What they finished, without the 'I'm done with': 'printing documents'." },
+      },
+      additionalProperties: false,
+    },
   },
   {
     name: "annotate_item",
