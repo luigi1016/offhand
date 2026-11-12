@@ -51,11 +51,19 @@ The setup page has two things to paste, each with a **Copy** button: an **MCP se
 
 ### Pebble Index 01
 
-In the Pebble app:
+In the Pebble app, open **Index**, then its **Settings**:
 
-1. Set hold and talk to **Index agent**.
+1. Set **Hold & Talk** to **Index agent**.
 2. Uncheck **Notes** and **Reminders**. Left on, Pebble keeps what you say in its own lists and offhand never hears it.
-3. Add an MCP server. Choose **Streamable**, not SSE. Paste the URL and the header from the setup page.
+
+<img src="docs/img/install-4-pebble-settings.png" width="300" alt="Pebble's Index settings: Hold and Talk set to Index agent, Notes and Reminders unchecked">
+
+3. Add an MCP server. Paste the **MCP server URL** from the setup page into **URL**.
+4. Choose **Streamable**, not SSE.
+5. Tap **Authorization (optional)** to open it and paste the **Authorization header** from the setup page. It is not optional here: without it Pebble says "unauthorized".
+6. Tap **Save**.
+
+<img src="docs/img/install-4-pebble-server.png" width="300" alt="Pebble's MCP server box: Streamable chosen, with Authorization (optional) below it">
 
 ### Any other device
 
@@ -82,6 +90,7 @@ That is the whole install.
 | "Open this page with your token" | The Worker is already set up. Use your bookmark. If you lost it, see below. |
 | "Not set up yet" | Open the Worker's address and do step 3. |
 | The device says "expected status code 200 but was 405" | The MCP server was added as SSE. Add it as Streamable. |
+| The device says "unauthorized" | The header is missing or wrong. In the Pebble app, open the MCP server, tap Authorization (optional) and paste the Authorization header from the setup page. |
 | What you say lands in Pebble's own notes or reminders | In the Pebble app, set hold and talk to Index agent and uncheck Notes and Reminders. |
 | Times land at the wrong hour | The setup page shows the time zone offhand uses, near the bottom. If it is wrong, click Disconnect Roma, then Connect Roma again from a browser in your time zone. |
 
