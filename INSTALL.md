@@ -81,33 +81,18 @@ The bottom of the setup page shows the lists offhand can see. Use one of yours i
 
 That is the whole install.
 
-## If something goes wrong
-
-| What you see | What to do |
-|---|---|
-| The form in step 1 asks for a token, key or secret | That is a bug. Stop and [open an issue](https://github.com/luigi1016/offhand/issues). |
-| The Worker has no address, or it is switched off | Open the Worker's Domains tab and switch on the toggle next to Production. |
-| "Open this page with your token" | The Worker is already set up. Use your bookmark. If you lost it, see below. |
-| "Not set up yet" | Open the Worker's address and do step 3. |
-| The device says "expected status code 200 but was 405" | The MCP server was added as SSE. Add it as Streamable. |
-| The device says "unauthorized" | The header is missing or wrong. In the Pebble app, open the MCP server, tap Authorization (optional) and paste the Authorization header from the setup page. |
-| What you say lands in Pebble's own notes or reminders | In the Pebble app, set hold and talk to Index agent and uncheck Notes and Reminders. |
-| Times land at the wrong hour | The setup page shows the time zone offhand uses, near the bottom. If it is wrong, click Disconnect Roma, then Connect Roma again from a browser in your time zone. |
-
-**Lost the bookmark?** In Cloudflare, open **Storage & Databases**, then **KV**, open the Worker's namespace and delete the key named `offhand.token`. Open the Worker's address and connect Roma again. That makes a new token, so paste the new header into your device's app.
-
-## What to know
-
-- **Your token is never shown to a visitor.** It is made when you finish connecting Roma, so a robot or a stranger that opens your Worker's address first gets a page with a button and nothing else.
-- **Your Roma sign-in stays in your Cloudflare account**, in the Worker's KV namespace. Whoever can log in to that account can read it.
-- **Your Worker runs your copy of the code.** It does not follow this repository. To get changes made here, [update it](#update-it).
-
 ## Update it
 
 Install it again over the old one. Keep the storage: it holds your token and your Roma sign-in, so your device keeps working.
 
 1. **Delete the Worker.** Cloudflare, Workers & Pages, your Worker, Settings, scroll to the bottom, Delete.
+
+   <img src="docs/img/update-1-delete-worker.png" width="620" alt="The bottom of the Worker's Settings page in Cloudflare: Danger zone, Delete Worker">
+
 2. **Delete the copy of the code.** GitHub, the repository Cloudflare made, Settings, Danger Zone, Delete this repository.
+
+   <img src="docs/img/update-2-delete-repo.png" width="620" alt="The bottom of the repository's Settings page on GitHub: Danger Zone, Delete this repository">
+
 3. **Deploy again.** Do [Step 1](#step-1-deploy) with the same project name. Under **Select KV namespace**, pick your existing one, not "Create new".
 
 Your bookmarked setup page still opens and still says **Connected**.
