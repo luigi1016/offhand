@@ -29,16 +29,6 @@ shortcut, chat bot          complete_item           items                   codi
 
 The full contract is in [docs/contract.md](docs/contract.md).
 
-## Supported today
-
-| Side | First adapter | Next |
-|---|---|---|
-| Input | Pebble Index 01 ring (via MCP) | any device that can POST text |
-| Item store | Roma | Todoist, Linear, Things, Notion |
-| Workers | phone calls (ElevenLabs + Twilio), Claude Code on a Mac | yours |
-
-The first adapters are the ones I use. The seams are there so the next ones are a file, not a fork.
-
 ## Status
 
 Early. Build order:
