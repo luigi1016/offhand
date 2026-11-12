@@ -92,6 +92,7 @@ That is the whole install.
 | The device says "expected status code 200 but was 405" | The MCP server was added as SSE. Add it as Streamable. |
 | The device says "unauthorized" | The header is missing or wrong. In the Pebble app, open the MCP server, tap Authorization (optional) and paste the Authorization header from the setup page. |
 | What you say lands in Pebble's own notes or reminders | In the Pebble app, set hold and talk to Index agent and uncheck Notes and Reminders. |
+| The update run fails with a red cross | Click the run to read why. Nothing in your copy was changed. [Open an issue](https://github.com/luigi1016/offhand/issues) with what it says. |
 | Times land at the wrong hour | The setup page shows the time zone offhand uses, near the bottom. If it is wrong, click Disconnect Roma, then Connect Roma again from a browser in your time zone. |
 
 **Lost the bookmark?** In Cloudflare, open **Storage & Databases**, then **KV**, open the Worker's namespace and delete the key named `offhand.token`. Open the Worker's address and connect Roma again. That makes a new token, so paste the new header into your device's app.
@@ -100,7 +101,58 @@ That is the whole install.
 
 - **Your token is never shown to a visitor.** It is made when you finish connecting Roma, so a robot or a stranger that opens your Worker's address first gets a page with a button and nothing else.
 - **Your Roma sign-in stays in your Cloudflare account**, in the Worker's KV namespace. Whoever can log in to that account can read it.
-- **Your Worker runs your copy of the code.** It does not follow this repository, so changes here do not reach it yet.
+- **Your Worker runs your copy of the code.** It does not follow this repository by itself. To get changes made here, see [Update it](#update-it).
+- **Settings go in Cloudflare, not in the code.** To change where unlisted items go or the time zone, set `DEFAULT_LIST` or `TIME_ZONE` on the Worker's **Settings** page, under **Variables and Secrets**. An update leaves them alone.
+
+## Update it
+
+Your Worker does not update by itself. Updating keeps your token, your Roma sign-in and your device's setup.
+
+### Once: add the update button
+
+Cloudflare cannot add this for you, so it takes one paste.
+
+1. In Cloudflare, open your Worker's **Overview** page and click the GitHub link at the top right. It looks like `your-name/your-project`. This opens your copy of the code.
+2. Click **Add file**, then **Create new file**.
+3. In the name box, type `.github/workflows/update.yml`. GitHub turns each `/` into a folder.
+4. Paste this into the large box:
+
+```yaml
+name: Update offhand
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Which version of offhand to get. Leave it as main.
+        default: main
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: copy
+      - uses: actions/checkout@v4
+        with:
+          repository: luigi1016/offhand
+          ref: ${{ inputs.version }}
+          path: latest
+      - run: node latest/worker/scripts/update.mjs copy latest/worker
+```
+
+5. Click **Commit changes**, then **Commit changes** again in the box that opens.
+
+### Each time: press it
+
+1. Open your copy on GitHub and click **Actions**.
+2. Click **Update offhand** in the list on the left.
+3. Click **Run workflow**, then the green **Run workflow**.
+
+**You should see:** a green tick next to the run after about half a minute, then a new deployment on your Worker's page in Cloudflare about a minute later. If there was nothing new, the run still gets a green tick and your Worker is left alone.
+
+What it does: it replaces the code in your copy with the latest from this repository, keeps the Worker name and storage Cloudflare set up at install, and saves. Cloudflare sees the change and redeploys. If you edited the code in your copy yourself, those edits are replaced.
 
 ## Remove it
 

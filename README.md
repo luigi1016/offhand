@@ -51,6 +51,8 @@ No terminal, about five minutes. You need a free Cloudflare account, a GitHub ac
 
 **[Follow INSTALL.md](INSTALL.md)**: five steps, each with what you should see when it worked.
 
+Already installed? [Update it](INSTALL.md#update-it).
+
 Prefer keys over sign-in, or deploying from a terminal? [worker/README.md](worker/README.md) has both.
 
 ## Repository layout

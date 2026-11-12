@@ -14,7 +14,7 @@ The Cloudflare Worker. Stateless: every request carries everything it needs.
 
 ## Secrets and variables
 
-Secrets are set once and never written to a file in this repo. All three are optional, and so is every variable: `wrangler.jsonc` sets none, because Deploy to Cloudflare shows a box for each one it finds. To change a variable, add a `vars` block there.
+Secrets are set once and never written to a file in this repo. All three are optional, and so is every variable: `wrangler.jsonc` sets none, because Deploy to Cloudflare shows a box for each one it finds. To change a variable, set it in the Cloudflare dashboard (the Worker, Settings, Variables and Secrets). `keep_vars` makes it survive deploys and updates.
 
 | Name | Kind | What it is |
 |---|---|---|
@@ -71,7 +71,9 @@ src/inputs/say.ts     text in, Claude picks the tool
 src/store/types.ts    the ItemStore interface
 src/store/roma.ts     Roma, the first store
 src/store/roma-auth.ts  Roma sign-in: OAuth 2.1 with PKCE, tokens in KV
-test/                 the intents, the MCP input, the router and the sign-in against fakes
+scripts/update.mjs    brings a copy up to date; run by the "Update offhand" action (INSTALL.md)
+scripts/carry-over.mjs  what a copy keeps across an update: its Worker name and KV id
+test/                 the intents, the MCP input, the router, the sign-in and the update against fakes
 ```
 
 The contract these implement is in [docs/contract.md](../docs/contract.md).
