@@ -47,30 +47,9 @@ Early. Build order:
 
 ## Install
 
-No terminal. A free Cloudflare account, a GitHub account and Roma.
+No terminal, about five minutes. You need a free Cloudflare account, a GitHub account and Roma.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/luigi1016/offhand/tree/main/worker)
-
-1. **Deploy.** Click the button. On Cloudflare's form, pick your Git account and click Deploy. Nothing else on the form needs changing. Cloudflare copies the code into a repository of your own and runs it.
-2. **Open your Worker.** Its address is on the Worker's Overview page in Cloudflare, under Domains and routes: `https://<project name>.<your account>.workers.dev`. If that page says the address is disabled, enable it there.
-3. **Connect Roma.** Click **Connect Roma** and approve. You land on your setup page. Bookmark it: it is the way back, and its address holds your token, so do not share it.
-4. **Paste into your device's app.** The setup page has an MCP URL and a header, each with a Copy button. Add them as a **Streamable HTTP** MCP server, not SSE.
-
-### Pebble Index 01
-
-In the Pebble app:
-
-1. Set hold and talk to **Index agent**.
-2. Uncheck **Notes** and **Reminders**. Left on, Pebble keeps what you say in its own lists and offhand never hears it.
-3. Add the MCP server from step 4 above, as **Streamable**.
-
-Hold the button and say "add milk to groceries". It should land in Roma.
-
-### What to know
-
-- **Your token is never shown to a visitor.** It is made when you finish connecting Roma, so a robot or a stranger that opens your Worker's address first gets a page with a button and nothing else.
-- **Your Roma sign-in stays in your Cloudflare account**, in the Worker's KV namespace. Whoever can log in to that account can read it.
-- **Your Worker runs your copy of the code.** It does not follow this repository, so changes here do not reach it yet.
+**[Follow INSTALL.md](INSTALL.md)**: five steps, each with what you should see when it worked.
 
 Prefer keys over sign-in, or deploying from a terminal? [worker/README.md](worker/README.md) has both.
 
