@@ -27,9 +27,12 @@ Cloudflare has now made three things in your accounts: a copy of this code in a 
 ## Step 2. Open your Worker
 
 1. In Cloudflare, open **Workers & Pages** and click your new Worker. It has the project name from the form.
-2. On its **Overview** page, find the address that ends in `.workers.dev`.
-3. If it says the address is disabled, enable it there.
-4. Click the address.
+2. On its **Overview** page, the address is the link at the top. It ends in `.workers.dev`. In the picture it is the grey bar.
+3. Click the address.
+
+<img src="docs/img/install-2-address.png" width="620" alt="The Worker's Overview page in Cloudflare, with the address at the top greyed out">
+
+No address there? Open the **Domains** tab and switch on the toggle next to **Production**.
 
 **You should see:** a page that says **offhand is up**, with one button: **Connect Roma**.
 
@@ -75,7 +78,7 @@ That is the whole install.
 | What you see | What to do |
 |---|---|
 | The form in step 1 asks for a token, key or secret | That is a bug. Stop and [open an issue](https://github.com/luigi1016/offhand/issues). |
-| The Worker's address says it is disabled | Enable it on the Worker's Overview page, then click it. |
+| The Worker has no address, or it is switched off | Open the Worker's Domains tab and switch on the toggle next to Production. |
 | "Open this page with your token" | The Worker is already set up. Use your bookmark. If you lost it, see below. |
 | "Not set up yet" | Open the Worker's address and do step 3. |
 | The device says "expected status code 200 but was 405" | The MCP server was added as SSE. Add it as Streamable. |
