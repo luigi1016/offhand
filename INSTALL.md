@@ -60,7 +60,7 @@ In the Pebble app, open **Index**, then its **Settings**:
 
 3. Add an MCP server. Paste the **MCP server URL** from the setup page into **URL**.
 4. Choose **Streamable**, not SSE.
-5. Tap **Authorization (optional)** to open it and paste the **Authorization header** from the setup page. It is not optional here: without it Pebble says "unauthorized".
+5. Tap **Authorization (optional)** to open it and paste the whole **Authorization header** from the setup page, the word `Bearer` included. It is not optional here: without it Pebble says "unauthorized".
 6. Tap **Save**.
 
 <img src="docs/img/install-4-pebble-server.png" width="300" alt="Pebble's MCP server box: Streamable chosen, with Authorization (optional) below it">
