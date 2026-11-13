@@ -68,6 +68,11 @@ describe("the token", () => {
     const home = await (await worker.fetch(get("/"), e)).text();
     expect(home).not.toContain(token);
     expect(home).toContain("Open this page with your token");
+    // The way back: read the token from KV, or delete it to make a new one.
+    expect(home).toContain("copy its value");
+    expect(home).toContain("https://offhand.test/setup?t=");
+    expect(home).toContain("Delete the <code>offhand.token</code> key");
+    expect(home).not.toContain("OFFHAND_TOKEN");
   });
 
   it("is not given to someone who started signing in before the owner and finishes after", async () => {
@@ -110,6 +115,14 @@ describe("the token", () => {
     expect((await worker.fetch(post("/mcp"), e)).status).toBe(503);
     expect((await worker.fetch(post("/say"), e)).status).toBe(503);
     expect((await worker.fetch(get("/setup"), e)).status).toBe(503);
+  });
+
+  it("when set at deploy time, the way back names the secret and no KV key", async () => {
+    const home = await (await worker.fetch(get("/"), env({ OFFHAND_TOKEN: "chosen" }))).text();
+    expect(home).toContain("Open this page with your token");
+    expect(home).toContain("OFFHAND_TOKEN");
+    expect(home).not.toContain("offhand.token");
+    expect(home).not.toContain("chosen");
   });
 
   it("can be rotated from the setup page, but not when set at deploy time", async () => {

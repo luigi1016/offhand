@@ -123,15 +123,23 @@ export function renderWelcome(): Response {
     your device's app.</p>${TZ_SCRIPT}`);
 }
 
-export function renderNoToken(origin: string): Response {
+// Shown to anyone without the token, so it says where the token is kept, never what it is.
+// tokenFromEnv: the token is the OFFHAND_TOKEN secret, so there is no key in KV to read or delete.
+export function renderNoToken(origin: string, tokenFromEnv = false): Response {
+  const setup = `<code>${esc(origin)}/setup?t=</code>`;
+  const lost = tokenFromEnv
+    ? `<p><b>Lost the link to your setup page?</b> Your token is the <code>OFFHAND_TOKEN</code> secret you set.
+       Your setup page is ${setup} followed by that token. To change the token, change the secret.</p>`
+    : `<p><b>Lost the link to your setup page?</b> In Cloudflare, open Storage &amp; Databases, then KV, then this
+       Worker's namespace. Open the key named <code>offhand.token</code> and copy its value. Your setup page is
+       ${setup} followed by that value.</p>
+       <p><b>Think someone else has the link?</b> Delete the <code>offhand.token</code> key instead. Then open
+       <code>${esc(origin)}/</code> and connect Roma again. That makes a new token, the old one stops working, and
+       you paste the new header into your device's app.</p>`;
   return html(`
     <h1>offhand</h1>
-    <p>Open this page with your token: <code>${esc(origin)}/setup?t=&lt;your token&gt;</code>. That is the page you
-    bookmarked after connecting Roma.</p>
-    <p><b>Lost the link, or was it not you who set this up?</b> In the Cloudflare dashboard, open this Worker's KV
-    namespace and delete the <code>offhand.token</code> key. Then open <code>${esc(origin)}/</code> and connect Roma
-    again: that makes a new token and the old one stops working. If the token is the <code>OFFHAND_TOKEN</code>
-    secret, change it there instead.</p>`);
+    <p>Open this page with your token: <code>${esc(origin)}/setup?t=&lt;your token&gt;</code>.</p>
+    ${lost}`);
 }
 
 export function renderPlain(text: string, status = 200): Response {
