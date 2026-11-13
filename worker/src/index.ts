@@ -48,7 +48,7 @@ export default {
     const romaAuth = env.ROMA_API_KEY ? null : new RomaAuth(kv as KV);
 
     if (path === "/") {
-      if (token) return renderNoToken(origin);
+      if (token) return renderNoToken(origin, Boolean(env.OFFHAND_TOKEN));
       if (!romaAuth) return renderPlain("ROMA_API_KEY is set, so there is no sign-in to make a token from. Set OFFHAND_TOKEN as well.", 500);
       return renderWelcome();
     }
@@ -78,7 +78,7 @@ export default {
       if (path === "/oauth/start") {
         if (!romaAuth) return renderPlain("Roma is connected with an API key; nothing to sign in to.");
         // Before there is a token anyone may start: finishing the sign-in is what makes one.
-        if (token && !authorized(req, token)) return renderNoToken(origin);
+        if (token && !authorized(req, token)) return renderNoToken(origin, Boolean(env.OFFHAND_TOKEN));
         const tz = url.searchParams.get("tz");
         if (tz && validZone(tz)) await (kv as KV).put(TZ_KEY, tz);
         // A browser lands here too, so a failure to reach Roma is a page, not JSON.
@@ -123,7 +123,7 @@ export default {
         });
 
       if (path === "/setup") {
-        if (!authorized(req, token)) return renderNoToken(origin);
+        if (!authorized(req, token)) return renderNoToken(origin, Boolean(env.OFFHAND_TOKEN));
         if (req.method === "POST") {
           const action = String((await req.formData()).get("action") ?? "");
           if (action === "disconnect" && romaAuth) {
