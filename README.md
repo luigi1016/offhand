@@ -27,16 +27,6 @@ shortcut, chat bot          complete_item           items                   codi
 - **The item store** is an interface: lists, items, status, a chat per item, and a way to watch a list for new items and replies. One file per task manager.
 - **Workers** watch a list and act. Which list an item is on decides who picks it up. A worker sets an item to in progress, writes its result into the item, posts only links or questions, and never marks anything complete. That is yours. Reply in the item's chat to steer it.
 
-## Status
-
-Early. Build order:
-
-| Phase | What you get | Status |
-|---|---|---|
-| 0 | Voice to list: add and read work by voice. Complete and annotate are switched off for now | in progress |
-| 1 | Phone-call worker: an item becomes a call, summary and recording come back | planned |
-| 2 | Mac app: items on repo-named lists run Claude Code | planned |
-
 ## Install
 
 No terminal, about five minutes. You need a free Cloudflare account, a GitHub account and Roma.
